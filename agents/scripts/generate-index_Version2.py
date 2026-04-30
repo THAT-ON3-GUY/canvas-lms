@@ -144,7 +144,9 @@ class RepositoryIndexer:
     """Main indexer for repository analysis."""
     
     def __init__(self, repo_path: str, exclude_patterns: Optional[List[str]] = None,
-                 max_file_size: int = 1000000, extract_symbols: bool = True):
+             max_file_size: int = 1000000, extract_symbols: bool = True,
+             filter_paths: Optional[List[str]] = None):
+        self.filter_paths = filter_paths or []
         self.repo_path = Path(repo_path)
         self.exclude_patterns = exclude_patterns or ['.git', 'node_modules', '.venv', '__pycache__',
                                                       'build', 'dist', '.egg-info', '.pytest_cache']
@@ -163,6 +165,16 @@ class RepositoryIndexer:
                 return True
         return False
     
+    def _should_descend(self, path: Path) -> bool:
+        """Check if we should descend into this directory."""
+        if not self.filter_paths:
+            return True
+        path_str = str(path.relative_to(self.repo_path))
+        return any(
+            fp.startswith(path_str) or path_str.startswith(fp)
+            for fp in self.filter_paths
+        )
+
     def _is_text_file(self, file_path: Path) -> bool:
         """Check if file is likely text-based."""
         binary_extensions = {'.pyc', '.o', '.so', '.dll', '.exe', '.zip', '.gz',
@@ -182,7 +194,8 @@ class RepositoryIndexer:
         
         for root, dirs, files in os.walk(self.repo_path):
             # Exclude directories in-place
-            dirs[:] = [d for d in dirs if not self._should_exclude(Path(root) / d)]
+            dirs[:] = [d for d in dirs if not self._should_exclude(Path(root) / d) 
+                    and self._should_descend(Path(root) / d)]
             
             for file in files:
                 file_path = Path(root) / file
@@ -292,16 +305,20 @@ def main():
     parser.add_argument('--max-file-size', '-m', type=int, default=1000000,
                        help='Maximum file size to include (bytes)')
     parser.add_argument('--no-symbols', action='store_true', help='Skip symbol extraction')
+    parser.add_argument('--filter-paths', '-fp', default='', help='Comma-separated list of paths to include (empty = include all)')
     
     args = parser.parse_args()
     
     exclude = [p.strip() for p in args.exclude_patterns.split(',')]
     
+    filter_paths = [p.strip() for p in args.filter_paths.split(',') if p.strip()]
+
     indexer = RepositoryIndexer(
         repo_path=args.repo_path,
         exclude_patterns=exclude,
         max_file_size=args.max_file_size,
-        extract_symbols=not args.no_symbols
+        extract_symbols=not args.no_symbols,
+        filter_paths=filter_paths
     )
     
     index_data = indexer.index()

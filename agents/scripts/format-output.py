@@ -11,7 +11,7 @@ import json
 import sys
 import argparse
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Any, Optional
 
 
@@ -20,28 +20,43 @@ class OutputFormatter:
     
     def __init__(self, index_file: str, findings_file: str, output_dir: str):
         self.index_file = Path(index_file)
-        self.findings_file = Path(findings_file)
+        # Path("") normalizes to Path(".") — never treat empty default as "read cwd"
+        findings_raw = (findings_file or "").strip()
+        self.findings_file: Optional[Path] = Path(findings_raw) if findings_raw else None
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         
         # Load data
         with open(self.index_file, 'r', encoding='utf-8') as f:
             self.index = json.load(f)
+        if not isinstance(self.index, dict):
+            raise ValueError(
+                f"Index file must contain a JSON object at the root, got {type(self.index).__name__}"
+            )
         
-        if self.findings_file.exists():
-            with open(self.findings_file, 'r', encoding='utf-8') as f:
-                self.findings = f.read()
-        else:
-            self.findings = ""
+        self.findings = ""
+        if self.findings_file is not None:
+            if self.findings_file.is_file():
+                with open(self.findings_file, 'r', encoding='utf-8') as f:
+                    self.findings = f.read()
+            else:
+                print(
+                    f"Warning: --findings path is not a file (skipping): {findings_raw}",
+                    file=sys.stderr,
+                )
     
     def _extract_metadata(self) -> Dict[str, Any]:
         """Extract basic metadata from index."""
-        return self.index.get("metadata", {})
+        if not isinstance(self.index, dict):
+            return {}
+        return self.index.get("metadata", {}) or {}
     
     def _build_file_list(self) -> List[str]:
         """Build a formatted file list from index."""
-        files = self.index.get("files", [])
-        key_files = set(self.index.get("key_files", []))
+        files = self.index.get("files") or []
+        if not isinstance(files, list):
+            files = []
+        key_files = set(self.index.get("key_files") or [])
         
         file_list = []
         for f in sorted(files):
@@ -52,32 +67,33 @@ class OutputFormatter:
     
     def _build_symbol_section(self) -> str:
         """Build a symbols/API section from extracted symbols."""
-        symbols = self.index.get("symbols", {})
-        
-        if not symbols:
+        symbols = self.index.get("symbols") or {}
+        if not isinstance(symbols, dict) or not symbols:
             return ""
         
         lines = ["## API Reference\n"]
         
         for file_path in sorted(symbols.keys()):
             file_symbols = symbols[file_path]
-            if not file_symbols:
+            if not file_symbols or not isinstance(file_symbols, list):
                 continue
             
             lines.append(f"### {file_path}\n")
             
             # Group by type
-            by_type = {}
+            by_type: Dict[str, List[Any]] = {}
             for sym in file_symbols:
+                if not isinstance(sym, dict):
+                    continue
                 sym_type = sym.get("type", "unknown")
-                if sym_type not in by_type:
-                    by_type[sym_type] = []
-                by_type[sym_type].append(sym)
+                by_type.setdefault(sym_type, []).append(sym)
             
             for sym_type in sorted(by_type.keys()):
                 lines.append(f"**{sym_type.title()}s:**")
                 for sym in by_type[sym_type]:
-                    lines.append(f"- `{sym['name']}` (line {sym['line']})")
+                    line_no = sym.get("line", "?")
+                    name = sym.get("name", "?")
+                    lines.append(f"- `{name}` (line {line_no})")
                 lines.append("")
         
         return "\n".join(lines)
@@ -90,10 +106,10 @@ class OutputFormatter:
         
         lines = [
             "# Repository Analysis Summary\n",
-            f"**Generated:** {datetime.utcnow().isoformat()}Z",
+            f"**Generated:** {datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')}",
             f"**Repository:** {metadata.get('repo_path', 'unknown')}",
             f"**Total Files:** {metadata.get('total_files', 0)}",
-            f"**Total Size:** {metadata.get('total_size_bytes', 0) / 1024:.1f} KB\n",
+            f"**Total Size:** {(metadata.get('total_size_bytes') or 0) / 1024:.1f} KB\n",
             
             "## Overview\n",
             "This document provides a structured analysis of the repository's contents, ",
@@ -104,7 +120,9 @@ class OutputFormatter:
             "*(⭐ = marked as key file)*\n"
         ]
         
-        key_files = self.index.get("key_files", [])
+        key_files = self.index.get("key_files") or []
+        if not isinstance(key_files, list):
+            key_files = []
         if key_files:
             for kf in sorted(key_files):
                 lines.append(f"- **{kf}**")
@@ -134,7 +152,7 @@ class OutputFormatter:
         lines.extend([
             "## Statistics\n",
             f"- Total Files: {metadata.get('total_files', 0)}",
-            f"- Total Size: {metadata.get('total_size_bytes', 0) / 1024:.1f} KB",
+            f"- Total Size: {(metadata.get('total_size_bytes') or 0) / 1024:.1f} KB",
         ])
         
         token_estimates = metadata.get('estimated_tokens', {})
@@ -150,12 +168,14 @@ class OutputFormatter:
     
     def format_dependency_map(self) -> Dict[str, Any]:
         """Format dependency map (can be extended for actual dependency analysis)."""
-        key_files = self.index.get("key_files", [])
+        key_files = self.index.get("key_files") or []
+        if not isinstance(key_files, list):
+            key_files = []
         
         dependency_map = {
             "metadata": {
-                "generated_at": datetime.utcnow().isoformat() + "Z",
-                "repo": self.index.get("metadata", {}).get("repo_path", "unknown")
+                "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                "repo": (self.index.get("metadata") or {}).get("repo_path", "unknown")
             },
             "key_files": key_files,
             "entry_points": [
@@ -166,7 +186,7 @@ class OutputFormatter:
                 f for f in key_files
                 if any(name in f for name in ['package.json', 'setup.py', 'go.mod', 'Cargo.toml'])
             ],
-            "symbols_by_file": self.index.get("symbols", {})
+            "symbols_by_file": self.index.get("symbols") or {}
         }
         
         return dependency_map
@@ -177,7 +197,7 @@ class OutputFormatter:
         
         lines = [
             "# Repository Analysis - Agent Process Documentation\n",
-            f"**Analysis Date:** {datetime.utcnow().isoformat()}Z",
+            f"**Analysis Date:** {datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')}",
             f"**Repository:** {metadata.get('repo_path', 'unknown')}\n",
             
             "## What This Agent Did\n",

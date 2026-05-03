@@ -118,11 +118,11 @@ Dependencies: Rails backend must be complete before React can make real API call
 
 ### Agent Workflow Used
 
-The repository analysis agent (`agents/scripts/generate-index_Version2.py`) was run against the Canvas LMS repository with path filtering to produce a focused index of `app/models` and `app/controllers/api`. The resulting `agents/focused-index.json` (93KB, 985 files) was used to identify relevant patterns. Direct `cat` inspection of key files was then used to confirm findings.
+The repository analysis agent (`agents/scripts/generate-index.py`) was run against the Canvas LMS repository with path filtering to produce a focused index of `app/models` and `app/controllers/api`. The resulting `agents/focused-index.json` (93KB, 985 files) was used to identify relevant patterns. Direct `cat` inspection of key files was then used to confirm findings.
 
 **Index generation command:**
 ```bash
-python3 agents/scripts/generate-index_Version2.py \
+python3 agents/scripts/generate-index.py \
   --repo-path . \
   --output agents/focused-index.json \
   --filter-paths app/models,app/controllers/api

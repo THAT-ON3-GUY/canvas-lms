@@ -12,9 +12,8 @@ import argparse
 import ast
 import re
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Any, Optional
-import mimetypes
 
 # Token estimation (approximate)
 try:
@@ -146,8 +145,8 @@ class RepositoryIndexer:
     def __init__(self, repo_path: str, exclude_patterns: Optional[List[str]] = None,
              max_file_size: int = 1000000, extract_symbols: bool = True,
              filter_paths: Optional[List[str]] = None):
-        self.filter_paths = filter_paths or []
-        self.repo_path = Path(repo_path)
+        self.repo_path = Path(repo_path).expanduser().resolve()
+        self.filter_paths = self._normalize_filter_paths(filter_paths or [])
         self.exclude_patterns = exclude_patterns or ['.git', 'node_modules', '.venv', '__pycache__',
                                                       'build', 'dist', '.egg-info', '.pytest_cache']
         self.max_file_size = max_file_size
@@ -157,23 +156,49 @@ class RepositoryIndexer:
             'package.json', 'requirements.txt', 'Dockerfile', '.github', 'Makefile',
             'go.mod', 'Cargo.toml', 'pom.xml', 'build.gradle', 'tsconfig.json'
         }
-    
+
+    @staticmethod
+    def _normalize_filter_paths(paths: List[str]) -> List[str]:
+        """Normalize filter roots (POSIX, no leading ./ or trailing slashes)."""
+        out = []
+        for p in paths:
+            if not (p or "").strip():
+                continue
+            norm = Path(p.strip()).as_posix().strip("/")
+            if norm:
+                out.append(norm)
+        return out
+
+    def _rel_matches_filters(self, rel_posix: str) -> bool:
+        """True if rel_posix is exactly a filter root or inside one of the filter trees."""
+        if not self.filter_paths:
+            return True
+        rel_posix = rel_posix.replace("\\", "/")
+        for fp in self.filter_paths:
+            if rel_posix == fp or rel_posix.startswith(fp + "/"):
+                return True
+        return False
+
+    def _should_descend(self, dir_path: Path) -> bool:
+        """When filtering, only walk subtrees that can contain a matching path."""
+        if not self.filter_paths:
+            return True
+        try:
+            dir_rel = dir_path.resolve().relative_to(self.repo_path).as_posix()
+        except ValueError:
+            dir_rel = dir_path.as_posix()
+        for fp in self.filter_paths:
+            # Descend if: filter is inside this dir, this dir is inside filter, or same node
+            if fp.startswith(dir_rel + "/") or dir_rel.startswith(fp + "/") or fp == dir_rel:
+                return True
+        return False
+
     def _should_exclude(self, path: Path) -> bool:
         """Check if path matches exclude patterns."""
         for pattern in self.exclude_patterns:
             if pattern in path.parts:
                 return True
         return False
-    
-    def _should_descend(self, path: Path) -> bool:
-        """Check if we should descend into this directory."""
-        if not self.filter_paths:
-            return True
-        path_str = str(path.relative_to(self.repo_path))
-        return any(
-            fp.startswith(path_str) or path_str.startswith(fp)
-            for fp in self.filter_paths
-        )
 
     def _is_text_file(self, file_path: Path) -> bool:
         """Check if file is likely text-based."""
@@ -194,15 +219,22 @@ class RepositoryIndexer:
         
         for root, dirs, files in os.walk(self.repo_path):
             # Exclude directories in-place
-            dirs[:] = [d for d in dirs if not self._should_exclude(Path(root) / d) 
-                    and self._should_descend(Path(root) / d)]
-            
+            dirs[:] = [
+                d
+                for d in dirs
+                if not self._should_exclude(Path(root) / d)
+                and self._should_descend((Path(root) / d).resolve())
+            ]
+
             for file in files:
                 file_path = Path(root) / file
                 rel_path = file_path.relative_to(self.repo_path)
-                
+                rel_posix = rel_path.as_posix()
+
                 # Skip excluded
                 if self._should_exclude(rel_path):
+                    continue
+                if not self._rel_matches_filters(rel_posix):
                     continue
                 
                 try:
@@ -215,30 +247,24 @@ class RepositoryIndexer:
                     total_size += file_size
                     file_count += 1
                     
-                    # Store file metadata
-                    file_info = {
-                        "name": file,
-                        "size": file_size,
-                        "type": mimetypes.guess_type(file)[0] or "unknown"
-                    }
-                    all_files.append(str(rel_path))
+                    all_files.append(rel_posix)
                     
                     # Check if key file
                     if file in self.key_file_names or any(file.startswith(kf) for kf in self.key_file_names):
-                        key_files.append(str(rel_path))
+                        key_files.append(rel_posix)
                     
                     # Extract symbols if enabled and text file
                     if self.extract_symbols and self._is_text_file(file_path):
                         extracted = SymbolExtractor.extract(str(file_path))
                         if extracted:
-                            symbols[str(rel_path)] = extracted
+                            symbols[rel_posix] = extracted
                 
                 except Exception as e:
                     print(f"Warning: Could not process {rel_path}: {e}", file=sys.stderr)
         
-        # Build nested structure from file paths
+        # Build nested structure from file paths (POSIX segments for cross-platform)
         for file_path in all_files:
-            parts = file_path.split('/')
+            parts = Path(file_path).parts
             current = structure
             for part in parts[:-1]:
                 if part not in current:
@@ -253,7 +279,7 @@ class RepositoryIndexer:
         index_data = {
             "metadata": {
                 "repo_path": str(self.repo_path),
-                "generated_at": datetime.utcnow().isoformat() + "Z",
+                "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
                 "total_files": file_count,
                 "total_size_bytes": total_size,
                 "estimated_tokens": self._estimate_tokens(file_count, total_size)

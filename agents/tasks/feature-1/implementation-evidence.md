@@ -4,7 +4,7 @@
 
 | PR | Description |
 |----|-------------|
-| https://github.com/THAT-ON3-GUY/canvas-lms/pull/17 | Adds `text_clips` predeploy migrations (`CreateTextClips`, `SetReplicaIdentityOnTextClips`), `agents/feature-implementation.md`, and canonical `agents/tasks/feature-1/{implementation-research,feature-1}.md`. |
+| https://github.com/THAT-ON3-GUY/canvas-lms/pull/17 | Adds `text_clips` predeploy migrations (`CreateTextClips`, `SetReplicaIdentityOnTextClips`), `agents/feature-implementation.md`, and canonical `agents/tasks/feature-1/{implementation-research,feature-1}.md`. (This evidence file landed on `master` in a follow-up commit: https://github.com/THAT-ON3-GUY/canvas-lms/commit/f9c6e7a9249ac82206b44579131253a5236e81b8.) |
 
 ## Board: item titles and status timeline
 

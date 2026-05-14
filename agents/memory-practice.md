@@ -41,7 +41,7 @@ This memory technique is directly applied to the following agent artifacts:
 ---
 last_verified: 2026-05-14
 verified_by: manual inspection + agent run
-canvas_commit: (run `git rev-parse --short HEAD` to capture)
+canvas_commit: a420dac2afc
 re_ground_if: upstream pull, merge, or >2 weeks since last_verified
 ---
 ```

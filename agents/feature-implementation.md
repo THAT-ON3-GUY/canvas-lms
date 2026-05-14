@@ -23,8 +23,6 @@ Read these **before** selecting work or editing code:
 | Feature pitch / scope | `agents/tasks/feature-1/feature-1.md` | Problem framing and scope boundaries |
 | Project / story definitions | `agents/project-creation.md` | GitHub target, project title, issue titles, milestones, acceptance criteria |
 
-**Duplicate path (legacy):** The same research files may exist under `agents/scripts/tasks/feature-1/`. The **canonical** copies for agents are under `agents/tasks/feature-1/`; if both exist, prefer `agents/tasks/feature-1/`.
-
 **GitHub repository (all MCP operations):**
 
 | Field | Value |

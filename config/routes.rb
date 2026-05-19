@@ -2885,6 +2885,12 @@ CanvasRails::Application.routes.draw do
       delete "planner_notes/:id", action: :destroy
     end
 
+    scope(controller: :text_clips) do
+      get "courses/:course_id/text_clips", action: :index, as: :course_text_clips
+      post "courses/:course_id/text_clips", action: :create
+      delete "courses/:course_id/text_clips/:id", action: :destroy
+    end
+
     scope(controller: :content_shares) do
       post "users/:user_id/content_shares", action: :create
       get "users/:user_id/content_shares/sent", action: :index, defaults: { list: "sent" }, as: :user_sent_content_shares

@@ -81,6 +81,7 @@ class User < ApplicationRecord
   has_one :communication_channel, -> { unretired.ordered }
   has_many :ignores
   has_many :planner_notes, dependent: :destroy
+  has_many :text_clips, dependent: :destroy, multishard: true
   has_many :viewed_submission_comments, dependent: :destroy
 
   has_many :enrollments, dependent: :destroy

@@ -17,56 +17,87 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+
+# @API Text clips
+#
+# Private text clips for the current user within a course.
+#
 class TextClipsController < ApplicationController
+  include Api::V1::TextClip
+
   before_action :require_user
   before_action :require_context_and_read_access
+  before_action :require_course_context
+  before_action :check_limited_access_for_students, only: %i[index create destroy]
 
+  # @API List text clips
+  #
+  # Returns clips for the current user in the course, newest first.
+  #
   def index
-    clips = @context.shard.activate do
-      TextClip.active.where(user_id: @current_user.id, course_id: @context.id).order(created_at: :desc)
+    q = params[:q].to_s
+    if q.present? && !SearchTermHelper.valid_search_term?(q)
+      return render json: { errors: [{ message: "search term must be at least 2 characters" }] },
+                    status: :unprocessable_content
     end
-    render json: clips.map { |clip| text_clip_json(clip) }
+
+    clips = @context.shard.activate do
+      @current_user.text_clips
+                   .active
+                   .for_course(@context)
+                   .searchable(q)
+                   .order(created_at: :desc)
+    end
+    paginated = Api.paginate(clips, self, api_v1_course_text_clips_url(@context))
+    render json: text_clips_json(paginated, @current_user, session)
   end
 
+  # @API Create a text clip
+  #
+  # @argument content [Required, String]
+  # @argument source_url [Optional, String]
+  #
   def create
+    attrs = create_params.to_h.symbolize_keys
     clip = nil
     @context.shard.activate do
-      clip = TextClip.new(
-        user_id: @current_user.id,
-        course_id: @context.id,
-        content: params[:content],
-        source_url: params[:source_url],
-        root_account_id: @context.root_account_id
+      clip = @current_user.text_clips.build(
+        course: @context,
+        content: attrs[:content],
+        source_url: attrs[:source_url].presence,
+        source_title: attrs[:source_title].presence
       )
       clip.save
     end
     if clip&.persisted?
-      render json: text_clip_json(clip), status: :created
+      render json: text_clip_json(clip, @current_user, session), status: :created
     else
       render json: clip&.errors || {}, status: :bad_request
     end
   end
 
+  # @API Delete a text clip
+  #
   def destroy
-    clip = @context.shard.activate do
-      TextClip.active.where(user_id: @current_user.id).find(params[:id])
+    clip = nil
+    begin
+      clip = @context.shard.activate do
+        @current_user.text_clips.active.for_course(@context).find(params[:id])
+      end
+    rescue ActiveRecord::RecordNotFound
+      return render json: { errors: [{ message: "not found" }] }, status: :not_found
     end
-    clip.destroy
-    render json: text_clip_json(clip), status: :ok
+
+    if clip.destroy
+      render json: text_clip_json(clip, @current_user, session), status: :ok
+    else
+      render json: clip.errors, status: :bad_request
+    end
   end
 
   private
 
-  def text_clip_json(clip)
-    {
-      id: clip.id,
-      user_id: clip.user_id,
-      course_id: clip.course_id,
-      content: clip.content,
-      source_url: clip.source_url,
-      workflow_state: clip.workflow_state,
-      created_at: clip.created_at,
-      updated_at: clip.updated_at
-    }
+  def create_params
+    params.permit(:content, :source_url, :source_title)
   end
 end

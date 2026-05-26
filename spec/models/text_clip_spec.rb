@@ -49,6 +49,17 @@ describe TextClip do
     expect(clip.errors[:user_id]).to be_present
   end
 
+  it "rejects content over the maximum length" do
+    clip = TextClip.new(
+      user_id: @student.id,
+      course_id: @course.id,
+      content: "x" * 50_001,
+      root_account_id: @course.root_account_id
+    )
+    expect(clip).not_to be_valid
+    expect(clip.errors[:content]).to be_present
+  end
+
   it "saves without a course_id" do
     clip = TextClip.create!(
       user_id: @student.id,
@@ -57,6 +68,42 @@ describe TextClip do
     )
     expect(clip.course_id).to be_nil
     expect(clip.workflow_state).to eql "active"
+  end
+
+  it "rejects source_title over the maximum length" do
+    clip = TextClip.new(
+      user_id: @student.id,
+      course_id: @course.id,
+      content: "clip",
+      source_title: "x" * 513,
+      root_account_id: @course.root_account_id
+    )
+    expect(clip).not_to be_valid
+    expect(clip.errors[:source_title]).to be_present
+  end
+
+  describe ".searchable" do
+    before :once do
+      @title_clip = TextClip.create!(
+        user_id: @student.id,
+        course_id: @course.id,
+        content: "body text",
+        source_title: "Syllabus Week One",
+        root_account_id: @course.root_account_id
+      )
+    end
+
+    it "returns all clips when the query is blank" do
+      expect(TextClip.searchable("").order(:id)).to eq [@student_clip, @teacher_clip, @title_clip]
+    end
+
+    it "matches content" do
+      expect(TextClip.searchable("Teacher clip").order(:id)).to eq [@teacher_clip]
+    end
+
+    it "matches source_title" do
+      expect(TextClip.searchable("Syllabus").order(:id)).to eq [@title_clip]
+    end
   end
 
   describe "soft delete" do

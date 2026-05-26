@@ -62,6 +62,40 @@ describe TextClipsController do
         expect(clip_ids).to eq [@teacher_clip.id]
         expect(clip_ids).not_to include(@student_clip.id)
       end
+
+      it "returns a Link header with rel=next when more clips exist than per_page" do
+        3.times do |i|
+          create_clip_for(@teacher, @course, "Paged clip #{i}")
+        end
+        get :index, format: :json, params: { course_id: @course.id, per_page: 2 }
+        expect(response).to be_successful
+        expect(json_parse(response.body).length).to eq 2
+        link = Api.parse_pagination_links(response.headers["Link"]).detect { |p| p[:rel] == "next" }
+        expect(link).to be_present
+      end
+
+      it "filters clips with q across content and source_title" do
+        body_clip = create_clip_for(@teacher, @course, "unique body phrase")
+        titled = @course.shard.activate do
+          TextClip.create!(
+            user_id: @teacher.id,
+            course_id: @course.id,
+            content: "other",
+            source_title: "Module Overview",
+            root_account_id: @course.root_account_id
+          )
+        end
+        get :index, format: :json, params: { course_id: @course.id, q: "unique body" }
+        expect(json_parse(response.body).pluck("id")).to eq [body_clip.id]
+
+        get :index, format: :json, params: { course_id: @course.id, q: "Module" }
+        expect(json_parse(response.body).pluck("id")).to eq [titled.id]
+      end
+
+      it "returns 422 when q is too short" do
+        get :index, format: :json, params: { course_id: @course.id, q: "a" }
+        expect(response).to have_http_status(:unprocessable_content)
+      end
     end
 
     describe "POST #create" do
@@ -77,6 +111,20 @@ describe TextClipsController do
         expect(clip.user_id).to eq @teacher.id
         expect(clip.course_id).to eq @course.id
         expect(clip.content).to eql "New clip content"
+      end
+
+      it "accepts and stores source_title" do
+        post :create, format: :json, params: {
+          course_id: @course.id,
+          content: "Titled clip",
+          source_url: "https://example.com/page",
+          source_title: "Assignments Index"
+        }
+        expect(response).to have_http_status(:created)
+        body = json_parse(response.body)
+        clip = @course.shard.activate { TextClip.find(body["id"]) }
+        expect(clip.source_title).to eql "Assignments Index"
+        expect(body["source_title"]).to eql "Assignments Index"
       end
 
       it "returns forbidden when the user cannot read the course" do

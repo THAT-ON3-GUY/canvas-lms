@@ -77,6 +77,7 @@ export type ActiveTray =
   | 'help'
   | 'history'
   | 'profile'
+  | 'textClips'
 
 const EXTERNAL_TOOLS_REGEX = /^\/accounts\/[^\/]*\/(external_tools)/
 const ACTIVE_ROUTE_REGEX =
@@ -102,6 +103,8 @@ export function getTrayLabel(type: string | null) {
       return I18n.t('%{title} tray', {title: window.ENV.help_link_name})
     case 'history':
       return I18n.t('Recent History tray')
+    case 'textClips':
+      return I18n.t('Text clips tray')
     default:
       return I18n.t('Global navigation tray')
   }

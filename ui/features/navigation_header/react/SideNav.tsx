@@ -27,6 +27,7 @@ import {Avatar} from '@instructure/ui-avatar'
 import {Img} from '@instructure/ui-img'
 import {
   IconAdminLine,
+  IconBookmarkLine,
   IconCalendarMonthLine,
   IconCanvasLogoSolid,
   IconClockLine,
@@ -66,6 +67,7 @@ const AccountsTray = React.lazy(() => import('./trays/AccountsTray'))
 const ProfileTray = React.lazy(() => import('./trays/ProfileTray'))
 const HistoryTray = React.lazy(() => import('./trays/HistoryTray'))
 const HelpTray = React.lazy(() => import('./trays/HelpTray'))
+const TextClipsTray = React.lazy(() => import('./trays/TextClipsTray'))
 
 export const InformationIconEnum = {
   INFORMATION: 'information',
@@ -87,6 +89,7 @@ interface ISideNav {
 }
 
 const SideNav: React.FC<ISideNav> = ({externalTools = []}) => {
+  const courseIdForClips = window.ENV.COURSE_ID
   const [collapseSideNav, setCollapseSideNav] = useState(window.ENV.SETTINGS.collapse_global_nav)
   const [state, dispatch] = useReducer(sideNavReducer, initialState)
   const {isTrayOpen, activeTray, selectedNavItem, previousSelectedNavItem} = state
@@ -201,6 +204,22 @@ const SideNav: React.FC<ISideNav> = ({externalTools = []}) => {
     enabled: countsEnabled && ENV.FEATURES.embedded_release_notes && !releaseNotesBadgeDisabled,
     persister: sessionStoragePersister.persisterFn,
   })
+
+  useEffect(() => {
+    const cid = courseIdForClips?.toString()
+    if (!cid) return
+    if (sessionStorage.getItem(`text_clips_tray_open:${cid}`) === '1') {
+      dispatch({type: 'SET_ACTIVE_TRAY', payload: 'textClips'})
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    const cid = courseIdForClips?.toString()
+    if (!cid) return
+    const open = activeTray === 'textClips' && isTrayOpen
+    sessionStorage.setItem(`text_clips_tray_open:${cid}`, open ? '1' : '0')
+  }, [isTrayOpen, activeTray, courseIdForClips])
 
   useLayoutEffect(() => {
     const collapseDiv = document.querySelectorAll('[aria-label="Main navigation"]')[0]
@@ -458,6 +477,25 @@ const SideNav: React.FC<ISideNav> = ({externalTools = []}) => {
             )
           })}
 
+          {courseIdForClips ? (
+            <SideNavBar.Item
+              id="text-clips-tray"
+              icon={<IconBookmarkLine />}
+              label={I18n.t('Text clips')}
+              href="#"
+              onClick={event => {
+                event.preventDefault()
+                handleActiveTray('textClips', true)
+              }}
+              selected={selectedNavItem === 'textClips'}
+              data-selected={selectedNavItem === 'textClips'}
+              themeOverride={{
+                fontWeight: 400,
+              }}
+              minimized={collapseSideNav}
+            />
+          ) : null}
+
           <SideNavBar.Item
             id="help-tray"
             icon={
@@ -550,6 +588,7 @@ const SideNav: React.FC<ISideNav> = ({externalTools = []}) => {
                     closeTray={() => dispatch({type: 'SET_IS_TRAY_OPEN', payload: false})}
                   />
                 )}
+                {activeTray === 'textClips' && <TextClipsTray />}
               </React.Suspense>
             </div>
           </div>

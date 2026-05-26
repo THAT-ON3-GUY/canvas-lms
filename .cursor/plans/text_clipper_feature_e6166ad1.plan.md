@@ -4,43 +4,43 @@ overview: "Implement the Text Clipper feature in the Canvas LMS fork: a Rails-ba
 todos:
   - id: migration
     content: "Create db/migrate/<TS>_create_text_clips.rb (sharded: root_account_id + replica_identity_index, course nullable)"
-    status: pending
+    status: completed
   - id: model
     content: Create app/models/text_clip.rb with SoftDeletable, RootAccountResolver, validations, and for_user/for_course scopes
-    status: pending
+    status: completed
   - id: user_assoc
     content: "Add has_many :text_clips, dependent: :destroy to app/models/user.rb"
-    status: pending
+    status: completed
   - id: serializer
     content: Create lib/api/v1/text_clip.rb JSON serializer
-    status: pending
+    status: completed
   - id: controller
     content: Create app/controllers/text_clips_controller.rb with index/create/destroy actions scoped via @current_user.text_clips
-    status: pending
+    status: completed
   - id: routes
     content: Add 3 routes inside ApiRouteSet::V1.draw block in config/routes.rb (near planner_notes)
-    status: pending
+    status: completed
   - id: selection_bundle
     content: "Create ui/features/text_clips/ TypeScript bundle: index.tsx, SelectionClipButton.tsx, api.ts, types.ts; wire via js_bundle :text_clips on course pages"
-    status: pending
+    status: completed
   - id: tray_component
     content: Create ui/features/navigation_header/react/trays/TextClipsTray.tsx using Tanstack Query + InstUI List
-    status: pending
+    status: completed
   - id: sidenav_wiring
     content: "Edit ui/features/navigation_header/react/SideNav.tsx: lazy import, new SideNavBar.Item gated by ENV.COURSE_ID, activeTray case, sessionStorage persistence keyed by course_id"
-    status: pending
+    status: completed
   - id: utils_label
     content: Add 'textClips' label to getTrayLabel in ui/features/navigation_header/react/utils.tsx
-    status: pending
+    status: completed
   - id: backend_specs
     content: Write spec/models/text_clip_spec.rb and spec/controllers/text_clips_controller_spec.rb
-    status: pending
+    status: completed
   - id: frontend_tests
     content: Write SelectionClipButton.test.tsx (FR-07 editor exclusion) and TextClipsTray.test.tsx (FR-02/FR-03)
-    status: pending
+    status: completed
   - id: verify
     content: Run db:migrate, rspec, yarn test, yarn check:ts, rubocop; walk through manual verification checklist
-    status: pending
+    status: completed
 isProject: false
 ---
 

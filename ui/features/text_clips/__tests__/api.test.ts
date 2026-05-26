@@ -17,7 +17,7 @@
  */
 
 import doFetchApiModule from '@canvas/do-fetch-api-effect'
-import {createTextClip} from '../api'
+import {createTextClip, undeleteTextClip, updateTextClip} from '../api'
 
 vi.mock('@canvas/do-fetch-api-effect', () => ({
   __esModule: true,
@@ -26,17 +26,17 @@ vi.mock('@canvas/do-fetch-api-effect', () => ({
 
 const doFetchApi = vi.mocked(doFetchApiModule)
 
-describe('createTextClip', () => {
+describe('text_clips api', () => {
   beforeEach(() => {
     doFetchApi.mockReset()
     doFetchApi.mockResolvedValue({
-      json: {id: 1, content: 'hello', source_title: 'Course Home'},
+      json: {id: 1, content: 'hello', source_title: 'Course Home', note: 'note'},
       response: new Response(),
       text: '',
     })
   })
 
-  it('POSTs source_title with the clip body', async () => {
+  it('createTextClip POSTs source_title with the clip body', async () => {
     await createTextClip('42', {
       content: 'selected text',
       source_url: 'https://example.com/courses/42',
@@ -50,6 +50,23 @@ describe('createTextClip', () => {
         source_url: 'https://example.com/courses/42',
         source_title: 'Course Home',
       },
+    })
+  })
+
+  it('updateTextClip PUTs content and note', async () => {
+    await updateTextClip('42', 9, {content: 'updated', note: 'my note'})
+    expect(doFetchApi).toHaveBeenCalledWith({
+      path: '/api/v1/courses/42/text_clips/9',
+      method: 'PUT',
+      body: {content: 'updated', note: 'my note'},
+    })
+  })
+
+  it('undeleteTextClip POSTs to undestroy', async () => {
+    await undeleteTextClip('42', 9)
+    expect(doFetchApi).toHaveBeenCalledWith({
+      path: '/api/v1/courses/42/text_clips/9/undestroy',
+      method: 'POST',
     })
   })
 })

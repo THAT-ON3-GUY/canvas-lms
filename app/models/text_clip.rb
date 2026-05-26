@@ -30,6 +30,7 @@ class TextClip < ApplicationRecord
   validates :content, presence: true, length: { maximum: 50_000 }
   validates :source_url, length: { maximum: 2048 }, allow_nil: true
   validates :source_title, length: { maximum: 512 }, allow_nil: true
+  validates :note, length: { maximum: 10_000 }, allow_nil: true
   validates :workflow_state, presence: true
 
   scope :for_user, ->(user) { where(user:) }
@@ -38,6 +39,6 @@ class TextClip < ApplicationRecord
     next all if q.blank?
 
     pattern = "%#{sanitize_sql_like(q)}%"
-    where("content ILIKE :p OR source_title ILIKE :p", p: pattern)
+    where("content ILIKE :p OR source_title ILIKE :p OR note ILIKE :p", p: pattern)
   }
 end

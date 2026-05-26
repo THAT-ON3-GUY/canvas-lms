@@ -17,19 +17,10 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+class AddNoteToTextClips < ActiveRecord::Migration[8.0]
+  tag :predeploy
 
-module Api::V1::TextClip
-  include Api::V1::Json
-
-  API_JSON_OPTS = {
-    only: %w[id content source_url source_title note user_id course_id workflow_state created_at updated_at]
-  }.freeze
-
-  def text_clip_json(clip, user, session, opts = {})
-    api_json(clip, user, session, opts.merge(API_JSON_OPTS))
-  end
-
-  def text_clips_json(clips, user, session, opts = {})
-    clips.map { |c| text_clip_json(c, user, session, opts) }
+  def change
+    add_column :text_clips, :note, :text
   end
 end

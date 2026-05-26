@@ -28,7 +28,7 @@ class TextClipsController < ApplicationController
   before_action :require_user
   before_action :require_context_and_read_access
   before_action :require_course_context
-  before_action :check_limited_access_for_students, only: %i[index create destroy]
+  before_action :check_limited_access_for_students, only: %i[index create update destroy undestroy]
 
   # @API List text clips
   #
@@ -56,6 +56,7 @@ class TextClipsController < ApplicationController
   #
   # @argument content [Required, String]
   # @argument source_url [Optional, String]
+  # @argument source_title [Optional, String]
   #
   def create
     attrs = create_params.to_h.symbolize_keys
@@ -76,17 +77,28 @@ class TextClipsController < ApplicationController
     end
   end
 
+  # @API Update a text clip
+  #
+  # @argument content [Optional, String]
+  # @argument note [Optional, String]
+  #
+  def update
+    clip = find_clip_for_current_user(active: true)
+    return unless clip.is_a?(TextClip)
+
+    updated = @context.shard.activate { clip.update(normalized_update_params) }
+    if updated
+      render json: text_clip_json(clip, @current_user, session)
+    else
+      render json: clip.errors, status: :bad_request
+    end
+  end
+
   # @API Delete a text clip
   #
   def destroy
-    clip = nil
-    begin
-      clip = @context.shard.activate do
-        @current_user.text_clips.active.for_course(@context).find(params[:id])
-      end
-    rescue ActiveRecord::RecordNotFound
-      return render json: { errors: [{ message: "not found" }] }, status: :not_found
-    end
+    clip = find_clip_for_current_user(active: true)
+    return unless clip.is_a?(TextClip)
 
     if clip.destroy
       render json: text_clip_json(clip, @current_user, session), status: :ok
@@ -95,9 +107,40 @@ class TextClipsController < ApplicationController
     end
   end
 
+  # @API Restore a soft-deleted text clip
+  #
+  def undestroy
+    clip = find_clip_for_current_user(active: false)
+    return unless clip.is_a?(TextClip)
+
+    if clip.deleted?
+      @context.shard.activate { clip.undestroy }
+    end
+    render json: text_clip_json(clip, @current_user, session)
+  end
+
   private
+
+  def find_clip_for_current_user(active:)
+    scope = @current_user.text_clips.for_course(@context)
+    scope = scope.active if active
+    @context.shard.activate { scope.find(params[:id]) }
+  rescue ActiveRecord::RecordNotFound
+    render json: { errors: [{ message: "not found" }] }, status: :not_found
+    nil
+  end
 
   def create_params
     params.permit(:content, :source_url, :source_title)
+  end
+
+  def update_params
+    params.permit(:content, :note)
+  end
+
+  def normalized_update_params
+    attrs = update_params.to_h.symbolize_keys
+    attrs[:note] = attrs[:note].presence if attrs.key?(:note)
+    attrs
   end
 end

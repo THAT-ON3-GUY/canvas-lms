@@ -21,6 +21,7 @@ export type TextClipRecord = {
   content: string
   source_url?: string | null
   source_title?: string | null
+  note?: string | null
   user_id: number
   course_id: number | null
   workflow_state: string
@@ -32,6 +33,11 @@ export type TextClipCreate = {
   content: string
   source_url?: string
   source_title?: string
+}
+
+export type TextClipUpdate = {
+  content?: string
+  note?: string
 }
 
 export type TextClipsPage = {

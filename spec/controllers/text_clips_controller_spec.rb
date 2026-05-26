@@ -146,5 +146,60 @@ describe TextClipsController do
         expect(response).to have_http_status(:not_found)
       end
     end
+
+    describe "PUT #update" do
+      it "updates content and note for the current user's clip" do
+        put :update, format: :json, params: {
+          course_id: @course.id,
+          id: @teacher_clip.id,
+          content: "Revised clip",
+          note: "Study this for the exam"
+        }
+        expect(response).to be_successful
+        body = json_parse(response.body)
+        clip = @course.shard.activate { @teacher_clip.reload }
+        expect(clip.content).to eql "Revised clip"
+        expect(clip.note).to eql "Study this for the exam"
+        expect(body["note"]).to eql "Study this for the exam"
+      end
+
+      it "returns not found for another user's clip" do
+        put :update, format: :json, params: {
+          course_id: @course.id,
+          id: @student_clip.id,
+          content: "Hacked"
+        }
+        expect(response).to have_http_status(:not_found)
+      end
+
+      it "returns bad request when content is blank" do
+        put :update, format: :json, params: {
+          course_id: @course.id,
+          id: @teacher_clip.id,
+          content: ""
+        }
+        expect(response).to have_http_status(:bad_request)
+      end
+    end
+
+    describe "POST #undestroy" do
+      it "restores a soft-deleted clip" do
+        @course.shard.activate { @teacher_clip.destroy }
+        post :undestroy, format: :json, params: { course_id: @course.id, id: @teacher_clip.id }
+        expect(response).to be_successful
+        expect(@course.shard.activate { @teacher_clip.reload.workflow_state }).to eql "active"
+      end
+
+      it "is idempotent for an active clip" do
+        post :undestroy, format: :json, params: { course_id: @course.id, id: @teacher_clip.id }
+        expect(response).to be_successful
+        expect(@course.shard.activate { @teacher_clip.reload.workflow_state }).to eql "active"
+      end
+
+      it "returns not found for another user's clip" do
+        post :undestroy, format: :json, params: { course_id: @course.id, id: @student_clip.id }
+        expect(response).to have_http_status(:not_found)
+      end
+    end
   end
 end

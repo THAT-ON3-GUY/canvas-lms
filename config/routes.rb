@@ -2888,7 +2888,9 @@ CanvasRails::Application.routes.draw do
     scope(controller: :text_clips) do
       get "courses/:course_id/text_clips", action: :index, as: :course_text_clips
       post "courses/:course_id/text_clips", action: :create
+      put "courses/:course_id/text_clips/:id", action: :update
       delete "courses/:course_id/text_clips/:id", action: :destroy
+      post "courses/:course_id/text_clips/:id/undestroy", action: :undestroy, as: :undestroy_course_text_clip
     end
 
     scope(controller: :content_shares) do

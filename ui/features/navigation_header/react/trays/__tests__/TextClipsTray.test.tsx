@@ -16,7 +16,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import {cleanup, render, screen, waitFor} from '@testing-library/react'
+import {cleanup, fireEvent, render, screen, waitFor} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import React from 'react'
 import {http, HttpResponse} from 'msw'
@@ -25,6 +25,10 @@ import TextClipsTray, {sourceLinkLabel} from '../TextClipsTray'
 import {MockedQueryProvider} from '@canvas/test-utils/query'
 import type {GlobalEnv} from '@canvas/global/env/GlobalEnv.d'
 import type {TextClipRecord} from '../../../../text_clips/types'
+
+vi.mock('@instructure/platform-alerts', () => ({
+  showFlashAlert: vi.fn(),
+}))
 
 declare const window: Window & {ENV: GlobalEnv}
 
@@ -189,5 +193,102 @@ describe('TextClipsTray', () => {
     await waitFor(() => expect(screen.getByText(/alpha/)).toBeInTheDocument())
     await user.click(screen.getByTestId('text-clips-load-more'))
     await waitFor(() => expect(screen.getByText(/page two clip/)).toBeInTheDocument())
+  })
+
+  it('renders note preview under content', async () => {
+    window.ENV.COURSE_ID = '13'
+    server.use(
+      http.get('*/api/v1/courses/13/text_clips', () =>
+        HttpResponse.json([{...baseClip, note: 'Important reminder'}]),
+      ),
+    )
+    render(
+      <MockedQueryProvider>
+        <TextClipsTray />
+      </MockedQueryProvider>,
+    )
+    await waitFor(() =>
+      expect(screen.getByTestId('text-clip-note-1')).toHaveTextContent('Important reminder'),
+    )
+  })
+
+  it('edits a clip and saves via PUT', async () => {
+    window.ENV.COURSE_ID = '14'
+    const user = userEvent.setup()
+    let clips = [{...baseClip, note: 'old note'}]
+    server.use(
+      http.get('*/api/v1/courses/14/text_clips', () => HttpResponse.json(clips)),
+      http.put('*/api/v1/courses/14/text_clips/1', async ({request}) => {
+        const body = (await request.json()) as {content: string; note: string}
+        clips = [{...baseClip, content: body.content, note: body.note}]
+        return HttpResponse.json(clips[0])
+      }),
+    )
+    render(
+      <MockedQueryProvider>
+        <TextClipsTray />
+      </MockedQueryProvider>,
+    )
+    await waitFor(() => expect(screen.getByText(/alpha/)).toBeInTheDocument())
+    await user.click(screen.getByTestId('text-clip-edit-1'))
+    fireEvent.change(screen.getByTestId('text-clip-edit-content-1'), {
+      target: {value: 'updated alpha'},
+    })
+    fireEvent.change(screen.getByTestId('text-clip-edit-note-1'), {
+      target: {value: 'revised note'},
+    })
+    await user.click(screen.getByTestId('text-clip-save-1'))
+    await waitFor(() => expect(screen.getByText(/updated alpha/)).toBeInTheDocument())
+  })
+
+  it('cancels edit without PATCH', async () => {
+    window.ENV.COURSE_ID = '15'
+    const user = userEvent.setup()
+    let putCalled = false
+    server.use(
+      http.get('*/api/v1/courses/15/text_clips', () => HttpResponse.json([baseClip])),
+      http.put('*/api/v1/courses/15/text_clips/1', () => {
+        putCalled = true
+        return HttpResponse.json(baseClip)
+      }),
+    )
+    render(
+      <MockedQueryProvider>
+        <TextClipsTray />
+      </MockedQueryProvider>,
+    )
+    await waitFor(() => expect(screen.getByText(/alpha/)).toBeInTheDocument())
+    await user.click(screen.getByTestId('text-clip-edit-1'))
+    await user.type(screen.getByTestId('text-clip-edit-content-1'), ' changed')
+    await user.click(screen.getByTestId('text-clip-cancel-1'))
+    expect(putCalled).toBe(false)
+    expect(screen.getByText(/alpha/)).toBeInTheDocument()
+  })
+
+  it('shows undo after delete and restores the clip', async () => {
+    window.ENV.COURSE_ID = '16'
+    const user = userEvent.setup()
+    let clips = [baseClip]
+    server.use(
+      http.get('*/api/v1/courses/16/text_clips', () => HttpResponse.json(clips)),
+      http.delete('*/api/v1/courses/16/text_clips/1', () => {
+        clips = []
+        return HttpResponse.json({})
+      }),
+      http.post('*/api/v1/courses/16/text_clips/1/undestroy', () => {
+        clips = [baseClip]
+        return HttpResponse.json(baseClip)
+      }),
+    )
+    render(
+      <MockedQueryProvider>
+        <TextClipsTray />
+      </MockedQueryProvider>,
+    )
+    await waitFor(() => expect(screen.getByText(/alpha/)).toBeInTheDocument())
+    await user.click(screen.getByTestId('text-clip-delete-1'))
+    await waitFor(() => expect(screen.getByTestId('text-clips-undo-alert')).toBeInTheDocument())
+    await user.click(screen.getByTestId('text-clips-undo-button'))
+    await waitFor(() => expect(screen.getByText(/alpha/)).toBeInTheDocument())
   })
 })

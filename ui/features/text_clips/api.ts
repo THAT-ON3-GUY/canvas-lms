@@ -17,7 +17,7 @@
  */
 
 import doFetchApi from '@canvas/do-fetch-api-effect'
-import type {TextClipCreate, TextClipRecord, TextClipsPage} from './types'
+import type {TextClipCreate, TextClipRecord, TextClipUpdate, TextClipsPage} from './types'
 
 export function textClipsIndexPath(
   courseId: string | number,
@@ -67,4 +67,34 @@ export async function deleteTextClip(
     path: `/api/v1/courses/${courseId}/text_clips/${id}`,
     method: 'DELETE',
   })
+}
+
+export async function updateTextClip(
+  courseId: string | number,
+  id: string | number,
+  body: TextClipUpdate,
+): Promise<TextClipRecord> {
+  const {json} = await doFetchApi<TextClipRecord>({
+    path: `/api/v1/courses/${courseId}/text_clips/${id}`,
+    method: 'PUT',
+    body,
+  })
+  if (!json) {
+    throw new Error('updateTextClip: empty response')
+  }
+  return json
+}
+
+export async function undeleteTextClip(
+  courseId: string | number,
+  id: string | number,
+): Promise<TextClipRecord> {
+  const {json} = await doFetchApi<TextClipRecord>({
+    path: `/api/v1/courses/${courseId}/text_clips/${id}/undestroy`,
+    method: 'POST',
+  })
+  if (!json) {
+    throw new Error('undeleteTextClip: empty response')
+  }
+  return json
 }

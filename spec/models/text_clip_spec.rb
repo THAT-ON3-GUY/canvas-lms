@@ -104,6 +104,40 @@ describe TextClip do
     it "matches source_title" do
       expect(TextClip.searchable("Syllabus").order(:id)).to eq [@title_clip]
     end
+
+    it "matches note" do
+      noted = TextClip.create!(
+        user_id: @student.id,
+        course_id: @course.id,
+        content: "plain body",
+        note: "Remember this definition",
+        root_account_id: @course.root_account_id
+      )
+      expect(TextClip.searchable("definition").order(:id)).to eq [noted]
+    end
+  end
+
+  it "rejects note over the maximum length" do
+    clip = TextClip.new(
+      user_id: @student.id,
+      course_id: @course.id,
+      content: "clip",
+      note: "x" * 10_001,
+      root_account_id: @course.root_account_id
+    )
+    expect(clip).not_to be_valid
+    expect(clip.errors[:note]).to be_present
+  end
+
+  it "allows nil and empty note" do
+    clip = TextClip.new(
+      user_id: @student.id,
+      course_id: @course.id,
+      content: "clip",
+      note: "",
+      root_account_id: @course.root_account_id
+    )
+    expect(clip).to be_valid
   end
 
   describe "soft delete" do

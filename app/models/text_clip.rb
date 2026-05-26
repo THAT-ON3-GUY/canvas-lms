@@ -23,6 +23,9 @@ class TextClip < ApplicationRecord
 
   belongs_to :user
   belongs_to :course, optional: true
+  has_many :text_clip_taggings, dependent: :destroy
+  has_many :active_text_clip_taggings, -> { active }, class_name: "TextClipTagging"
+  has_many :clip_tags, -> { active }, through: :active_text_clip_taggings, source: :clip_tag
 
   resolves_root_account through: :course
 
@@ -40,5 +43,12 @@ class TextClip < ApplicationRecord
 
     pattern = "%#{sanitize_sql_like(q)}%"
     where("content ILIKE :p OR source_title ILIKE :p OR note ILIKE :p", p: pattern)
+  }
+  scope :with_any_tag, lambda { |tag_ids|
+    next all if Array(tag_ids).compact.blank?
+
+    joins(:text_clip_taggings)
+      .where(text_clip_taggings: { clip_tag_id: tag_ids, workflow_state: "active" })
+      .distinct
   }
 end

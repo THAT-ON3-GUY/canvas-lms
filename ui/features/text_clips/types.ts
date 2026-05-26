@@ -16,12 +16,38 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+export type ClipTagColor =
+  | 'blue'
+  | 'green'
+  | 'orange'
+  | 'purple'
+  | 'red'
+  | 'gray'
+  | 'yellow'
+  | 'pink'
+
+export type ClipTagRecord = {
+  id: number | string
+  name: string
+  color: ClipTagColor
+  workflow_state: string
+  created_at: string
+  updated_at: string
+}
+
+export type TextClipTagStub = {
+  id: number | string
+  name: string
+  color: ClipTagColor
+}
+
 export type TextClipRecord = {
   id: number | string
   content: string
   source_url?: string | null
   source_title?: string | null
   note?: string | null
+  tags?: TextClipTagStub[]
   user_id: number
   course_id: number | null
   workflow_state: string
@@ -38,6 +64,7 @@ export type TextClipCreate = {
 export type TextClipUpdate = {
   content?: string
   note?: string
+  tag_ids?: Array<number | string>
 }
 
 export type TextClipsPage = {

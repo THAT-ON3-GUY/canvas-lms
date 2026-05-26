@@ -17,21 +17,22 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+class ClipTag < ApplicationRecord
+  extend RootAccountResolver
+  include Canvas::SoftDeletable
 
-module Api::V1::TextClip
-  include Api::V1::Json
+  PALETTE = %w[blue green orange purple red gray yellow pink].freeze
 
-  API_JSON_OPTS = {
-    only: %w[id content source_url source_title note user_id course_id workflow_state created_at updated_at]
-  }.freeze
+  belongs_to :user
+  has_many :text_clip_taggings, dependent: :destroy
+  has_many :text_clips, through: :text_clip_taggings
 
-  def text_clip_json(clip, user, session, opts = {})
-    json = api_json(clip, user, session, opts.merge(API_JSON_OPTS))
-    json["tags"] = clip.clip_tags.map { |t| { "id" => t.id, "name" => t.name, "color" => t.color } }
-    json
-  end
+  resolves_root_account through: :user
 
-  def text_clips_json(clips, user, session, opts = {})
-    clips.map { |c| text_clip_json(c, user, session, opts) }
-  end
+  validates :name, presence: true, length: { maximum: 64 }
+  validates :color, inclusion: { in: PALETTE }
+  validates :workflow_state, presence: true
+  validates :name, uniqueness: { scope: :user_id, conditions: -> { active }, case_sensitive: false }
+
+  scope :for_user, ->(user) { where(user:) }
 end

@@ -59,7 +59,10 @@ describe('sourceLinkLabel', () => {
 describe('TextClipsTray', () => {
   const oldCourseId = window.ENV.COURSE_ID
 
-  beforeAll(() => server.listen())
+  beforeAll(() => {
+    server.listen()
+    server.use(http.get('*/api/v1/users/self/clip_tags', () => HttpResponse.json([])))
+  })
   afterEach(() => {
     server.resetHandlers()
     cleanup()
@@ -69,7 +72,10 @@ describe('TextClipsTray', () => {
 
   it('shows empty state when there are no clips', async () => {
     window.ENV.COURSE_ID = '42'
-    server.use(http.get('*/api/v1/courses/42/text_clips', () => HttpResponse.json([])))
+    server.use(
+      http.get('*/api/v1/users/self/clip_tags', () => HttpResponse.json([])),
+      http.get('*/api/v1/courses/42/text_clips', () => HttpResponse.json([])),
+    )
     render(
       <MockedQueryProvider>
         <TextClipsTray />
@@ -91,6 +97,7 @@ describe('TextClipsTray', () => {
       },
     ]
     server.use(
+      http.get('*/api/v1/users/self/clip_tags', () => HttpResponse.json([])),
       http.get('*/api/v1/courses/7/text_clips', () => HttpResponse.json(clips)),
       http.delete('*/api/v1/courses/7/text_clips/1', () => {
         clips = []
@@ -263,6 +270,131 @@ describe('TextClipsTray', () => {
     await user.click(screen.getByTestId('text-clip-cancel-1'))
     expect(putCalled).toBe(false)
     expect(screen.getByText(/alpha/)).toBeInTheDocument()
+  })
+
+  it('renders tag chips under clip content', async () => {
+    window.ENV.COURSE_ID = '20'
+    server.use(
+      http.get('*/api/v1/users/self/clip_tags', () => HttpResponse.json([])),
+      http.get('*/api/v1/courses/20/text_clips', () =>
+        HttpResponse.json([
+          {
+            ...baseClip,
+            tags: [{id: 10, name: 'Exam', color: 'orange'}],
+          },
+        ]),
+      ),
+    )
+    render(
+      <MockedQueryProvider>
+        <TextClipsTray />
+      </MockedQueryProvider>,
+    )
+    await waitFor(() => expect(screen.getByTestId('text-clip-tag-1-10')).toHaveTextContent('Exam'))
+  })
+
+  it('filters clips when a tag chip is clicked', async () => {
+    window.ENV.COURSE_ID = '21'
+    const user = userEvent.setup()
+    const requests: string[] = []
+    server.use(
+      http.get('*/api/v1/users/self/clip_tags', () =>
+        HttpResponse.json([{id: 5, name: 'Exam', color: 'blue', workflow_state: 'active'}]),
+      ),
+      http.get('*/api/v1/courses/21/text_clips', ({request}) => {
+        requests.push(request.url)
+        const url = new URL(request.url)
+        if (url.searchParams.getAll('tag_ids[]').includes('5')) {
+          return HttpResponse.json([{...baseClip, id: 2, content: 'tagged only'}])
+        }
+        return HttpResponse.json([baseClip])
+      }),
+    )
+    render(
+      <MockedQueryProvider>
+        <TextClipsTray />
+      </MockedQueryProvider>,
+    )
+    await waitFor(() => expect(screen.getByTestId('text-clips-filter-tag-5')).toBeInTheDocument())
+    await user.click(screen.getByTestId('text-clips-filter-tag-5'))
+    await waitFor(() => expect(screen.getByText(/tagged only/)).toBeInTheDocument())
+    expect(requests.some(url => url.includes('tag_ids'))).toBe(true)
+    await user.click(screen.getByTestId('text-clips-clear-filters'))
+    await waitFor(() => expect(screen.getByText(/alpha/)).toBeInTheDocument())
+  })
+
+  it('saves tag_ids from the editor via PUT', async () => {
+    window.ENV.COURSE_ID = '22'
+    const user = userEvent.setup()
+    let putBody: Record<string, unknown> | null = null
+    server.use(
+      http.get('*/api/v1/users/self/clip_tags', () =>
+        HttpResponse.json([
+          {
+            id: 7,
+            name: 'Exam',
+            color: 'green',
+            workflow_state: 'active',
+            created_at: '',
+            updated_at: '',
+          },
+        ]),
+      ),
+      http.get('*/api/v1/courses/22/text_clips', () => HttpResponse.json([baseClip])),
+      http.put('*/api/v1/courses/22/text_clips/1', async ({request}) => {
+        putBody = (await request.json()) as Record<string, unknown>
+        return HttpResponse.json({
+          ...baseClip,
+          tag_ids: putBody?.tag_ids,
+          tags: [{id: 7, name: 'Exam', color: 'green'}],
+        })
+      }),
+    )
+    render(
+      <MockedQueryProvider>
+        <TextClipsTray />
+      </MockedQueryProvider>,
+    )
+    await waitFor(() => expect(screen.getByText(/alpha/)).toBeInTheDocument())
+    await user.click(screen.getByTestId('text-clip-edit-1'))
+    await waitFor(() => expect(screen.getByTestId('text-clip-edit-tag-1-7')).toBeInTheDocument())
+    await user.click(screen.getByTestId('text-clip-edit-tag-1-7'))
+    await user.click(screen.getByTestId('text-clip-save-1'))
+    await waitFor(() => expect(putBody?.tag_ids).toEqual([7]))
+  })
+
+  it('creates and deletes a tag in the manage panel', async () => {
+    window.ENV.COURSE_ID = '23'
+    const user = userEvent.setup()
+    let tags: Array<{id: number; name: string; color: string; workflow_state: string}> = []
+    server.use(
+      http.get('*/api/v1/users/self/clip_tags', () => HttpResponse.json(tags)),
+      http.get('*/api/v1/courses/23/text_clips', () => HttpResponse.json([])),
+      http.post('*/api/v1/users/self/clip_tags', async ({request}) => {
+        const body = (await request.json()) as {name: string; color: string}
+        const tag = {id: 99, name: body.name, color: body.color, workflow_state: 'active'}
+        tags = [tag]
+        return HttpResponse.json(tag, {status: 201})
+      }),
+      http.delete('*/api/v1/users/self/clip_tags/99', () => {
+        tags = []
+        return HttpResponse.json({})
+      }),
+    )
+    render(
+      <MockedQueryProvider>
+        <TextClipsTray />
+      </MockedQueryProvider>,
+    )
+    await waitFor(() => expect(screen.getByText(/No clips yet/i)).toBeInTheDocument())
+    await user.click(screen.getByTestId('text-clips-manage-tags-toggle'))
+    await user.type(screen.getByTestId('text-clips-new-tag-name'), 'New label')
+    await user.click(screen.getByTestId('text-clips-create-tag'))
+    await waitFor(() => expect(screen.getByTestId('text-clips-filter-tag-99')).toBeInTheDocument())
+    await user.click(screen.getByTestId('text-clips-delete-tag-99'))
+    await waitFor(() =>
+      expect(screen.queryByTestId('text-clips-filter-tag-99')).not.toBeInTheDocument(),
+    )
   })
 
   it('shows undo after delete and restores the clip', async () => {

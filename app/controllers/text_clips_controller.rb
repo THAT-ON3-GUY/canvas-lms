@@ -41,11 +41,15 @@ class TextClipsController < ApplicationController
                     status: :unprocessable_content
     end
 
+    tag_ids = Array(params[:tag_ids]).map(&:to_i).reject(&:zero?)
+
     clips = @context.shard.activate do
       @current_user.text_clips
                    .active
                    .for_course(@context)
                    .searchable(q)
+                   .with_any_tag(tag_ids)
+                   .preload(:clip_tags)
                    .order(created_at: :desc)
     end
     paginated = Api.paginate(clips, self, api_v1_course_text_clips_url(@context))
@@ -86,8 +90,20 @@ class TextClipsController < ApplicationController
     clip = find_clip_for_current_user(active: true)
     return unless clip.is_a?(TextClip)
 
-    updated = @context.shard.activate { clip.update(normalized_update_params) }
-    if updated
+    permitted = update_params.to_h
+    tag_ids = if permitted.key?("tag_ids")
+                Array(permitted["tag_ids"]).map(&:to_i).reject(&:zero?)
+              end
+    attrs = normalized_update_params(permitted.except("tag_ids"))
+
+    ok = @context.shard.activate do
+      ActiveRecord::Base.transaction do
+        (attrs.empty? || clip.update(attrs)) && sync_clip_taggings(clip, tag_ids)
+      end
+    end
+
+    if ok
+      clip = @context.shard.activate { TextClip.preload(:clip_tags).find(clip.id) }
       render json: text_clip_json(clip, @current_user, session)
     else
       render json: clip.errors, status: :bad_request
@@ -135,12 +151,31 @@ class TextClipsController < ApplicationController
   end
 
   def update_params
-    params.permit(:content, :note)
+    params.permit(:content, :note, tag_ids: [])
   end
 
-  def normalized_update_params
-    attrs = update_params.to_h.symbolize_keys
+  def normalized_update_params(permitted = nil)
+    attrs = (permitted || update_params.to_h).symbolize_keys
     attrs[:note] = attrs[:note].presence if attrs.key?(:note)
     attrs
+  end
+
+  def sync_clip_taggings(clip, requested_tag_ids)
+    return true if requested_tag_ids.nil?
+
+    allowed_ids = @current_user.clip_tags.active.where(id: requested_tag_ids).pluck(:id)
+    current_active = clip.text_clip_taggings.active
+
+    to_remove = current_active.where.not(clip_tag_id: allowed_ids)
+    to_remove.find_each(&:destroy)
+
+    allowed_ids.each do |tag_id|
+      existing = clip.text_clip_taggings.where(clip_tag_id: tag_id).first
+      if existing
+        existing.update!(workflow_state: "active") unless existing.active?
+      else
+        clip.text_clip_taggings.create!(clip_tag_id: tag_id)
+      end
+    end
   end
 end

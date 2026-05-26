@@ -19,33 +19,73 @@
 import {useScope as createI18nScope} from '@canvas/i18n'
 import {Alert} from '@instructure/ui-alerts'
 import {Button, IconButton} from '@instructure/ui-buttons'
+import {Flex} from '@instructure/ui-flex'
 import {Heading} from '@instructure/ui-heading'
 import {IconEditLine, IconExternalLinkLine, IconTrashLine} from '@instructure/ui-icons'
 import {Link} from '@instructure/ui-link'
 import {List} from '@instructure/ui-list'
 import {showFlashAlert} from '@instructure/platform-alerts'
 import {Spinner} from '@instructure/ui-spinner'
+import {Tag} from '@instructure/ui-tag'
 import {Text} from '@instructure/ui-text'
 import {TextArea} from '@instructure/ui-text-area'
 import {TextInput} from '@instructure/ui-text-input'
 import {View} from '@instructure/ui-view'
-import React, {useEffect, useMemo, useState} from 'react'
-import {useInfiniteQuery, useMutation, useQueryClient} from '@tanstack/react-query'
+import React, {useCallback, useEffect, useMemo, useState} from 'react'
+import {useInfiniteQuery, useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
 import {
+  createClipTag,
+  deleteClipTag,
   deleteTextClip,
+  fetchClipTags,
   fetchTextClipsPage,
   textClipsIndexPath,
   undeleteTextClip,
+  updateClipTag,
   updateTextClip,
 } from '../../../text_clips/api'
-import type {TextClipRecord, TextClipUpdate} from '../../../text_clips/types'
+import {CLIP_TAG_PALETTE, CLIP_TAG_THEME} from '../../../text_clips/tagColors'
+import type {
+  ClipTagColor,
+  ClipTagRecord,
+  TextClipRecord,
+  TextClipTagStub,
+  TextClipUpdate,
+} from '../../../text_clips/types'
 
 const I18n = createI18nScope('text_clips')
 const SEARCH_DEBOUNCE_MS = 250
 const UNDO_TIMEOUT_MS = 8000
 
-type EditDraft = {content: string; note: string}
+type EditDraft = {content: string; note: string; tag_ids: Array<number | string>}
 type PendingUndo = {id: number | string; preview: string}
+
+function ClipTagChip({
+  tag,
+  selected,
+  onClick,
+  testId,
+}: {
+  tag: TextClipTagStub | ClipTagRecord
+  selected?: boolean
+  onClick?: () => void
+  testId?: string
+}) {
+  const theme = CLIP_TAG_THEME[tag.color]
+  return (
+    <Tag
+      text={tag.name}
+      margin="0 x-small x-small 0"
+      data-testid={testId}
+      onClick={onClick}
+      themeOverride={{
+        defaultBackground: selected ? theme.borderColor : theme.background,
+        defaultBorderColor: theme.borderColor,
+        defaultColor: selected ? '#FFFFFF' : theme.color,
+      }}
+    />
+  )
+}
 
 function clipPreview(content: string | null | undefined, max = 160) {
   const oneLine = (content ?? '').replace(/\s+/g, ' ').trim()
@@ -71,11 +111,13 @@ type TextClipListItemProps = {
   clip: TextClipRecord
   editingId: number | string | null
   editDraft: EditDraft | null
+  allTags: ClipTagRecord[]
   onStartEdit: (clip: TextClipRecord) => void
   onEditDraftChange: (draft: EditDraft) => void
   onCancelEdit: () => void
   onSaveEdit: (id: number | string, body: TextClipUpdate) => void
   onDelete: (clip: TextClipRecord) => void
+  onToggleEditTag: (tagId: number | string) => void
   isSaving: boolean
   isDeleting: boolean
 }
@@ -84,11 +126,13 @@ function TextClipListItem({
   clip,
   editingId,
   editDraft,
+  allTags,
   onStartEdit,
   onEditDraftChange,
   onCancelEdit,
   onSaveEdit,
   onDelete,
+  onToggleEditTag,
   isSaving,
   isDeleting,
 }: TextClipListItemProps) {
@@ -114,6 +158,22 @@ function TextClipListItem({
               />
             </View>
             <View margin="x-small 0 0 0">
+              <Text as="div" size="small" weight="bold">
+                {I18n.t('Tags')}
+              </Text>
+              <Flex wrap="wrap" margin="xx-small 0 0 0">
+                {allTags.map(tag => (
+                  <ClipTagChip
+                    key={String(tag.id)}
+                    tag={tag}
+                    selected={editDraft.tag_ids.includes(tag.id)}
+                    onClick={() => onToggleEditTag(tag.id)}
+                    testId={`text-clip-edit-tag-${clip.id}-${tag.id}`}
+                  />
+                ))}
+              </Flex>
+            </View>
+            <View margin="x-small 0 0 0">
               <Button
                 size="small"
                 margin="0 x-small 0 0"
@@ -122,6 +182,7 @@ function TextClipListItem({
                   onSaveEdit(clip.id, {
                     content: editDraft.content,
                     note: editDraft.note,
+                    tag_ids: editDraft.tag_ids,
                   })
                 }
                 interaction={isSaving ? 'disabled' : 'enabled'}
@@ -141,6 +202,17 @@ function TextClipListItem({
         ) : (
           <>
             <Text>{clipPreview(clip.content)}</Text>
+            {clip.tags && clip.tags.length > 0 && (
+              <Flex wrap="wrap" margin="xx-small 0 0 0" data-testid={`text-clip-tags-${clip.id}`}>
+                {clip.tags.map(tag => (
+                  <ClipTagChip
+                    key={String(tag.id)}
+                    tag={tag}
+                    testId={`text-clip-tag-${clip.id}-${tag.id}`}
+                  />
+                ))}
+              </Flex>
+            )}
             {clip.note && (
               <View margin="xx-small 0 0 0">
                 <Text
@@ -197,9 +269,15 @@ export default function TextClipsTray() {
   const courseId = window.ENV.COURSE_ID
   const [searchInput, setSearchInput] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [selectedTagIds, setSelectedTagIds] = useState<Set<number | string>>(new Set())
+  const [manageOpen, setManageOpen] = useState(false)
+  const [newTagName, setNewTagName] = useState('')
+  const [newTagColor, setNewTagColor] = useState<ClipTagColor>('blue')
   const [editingId, setEditingId] = useState<number | string | null>(null)
   const [editDraft, setEditDraft] = useState<EditDraft | null>(null)
   const [pendingUndo, setPendingUndo] = useState<PendingUndo | null>(null)
+  const [renamingTagId, setRenamingTagId] = useState<number | string | null>(null)
+  const [renameDraft, setRenameDraft] = useState('')
 
   useEffect(() => {
     const handle = window.setTimeout(() => {
@@ -215,8 +293,18 @@ export default function TextClipsTray() {
   }, [pendingUndo])
 
   const searchTooShort = debouncedSearch.length === 1
+  const selectedTagIdsArray = useMemo(
+    () => Array.from(selectedTagIds).sort((a, b) => String(a).localeCompare(String(b))),
+    [selectedTagIds],
+  )
 
-  const queryKey = ['text_clips', courseId, debouncedSearch] as const
+  const clipTagsQueryKey = ['clip_tags'] as const
+  const {data: clipTags = []} = useQuery({
+    queryKey: clipTagsQueryKey,
+    queryFn: fetchClipTags,
+  })
+
+  const queryKey = ['text_clips', courseId, debouncedSearch, selectedTagIdsArray] as const
 
   const {data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage} =
     useInfiniteQuery({
@@ -225,6 +313,7 @@ export default function TextClipsTray() {
       getNextPageParam: page => page.nextPage ?? undefined,
       initialPageParam: textClipsIndexPath(courseId as string | number, {
         q: debouncedSearch || undefined,
+        tagIds: selectedTagIdsArray.length > 0 ? selectedTagIdsArray : undefined,
       }),
       enabled: Boolean(courseId) && !searchTooShort,
     })
@@ -234,6 +323,66 @@ export default function TextClipsTray() {
   const invalidateClips = () => {
     void queryClient.invalidateQueries({queryKey: ['text_clips', courseId]})
   }
+
+  const invalidateClipTags = () => {
+    void queryClient.invalidateQueries({queryKey: clipTagsQueryKey})
+  }
+
+  const toggleFilterTag = useCallback((tagId: number | string) => {
+    setSelectedTagIds(prev => {
+      const next = new Set(prev)
+      if (next.has(tagId)) {
+        next.delete(tagId)
+      } else {
+        next.add(tagId)
+      }
+      return next
+    })
+  }, [])
+
+  const toggleEditTag = useCallback((tagId: number | string) => {
+    setEditDraft(prev => {
+      if (!prev) return prev
+      const ids = new Set(prev.tag_ids)
+      if (ids.has(tagId)) {
+        ids.delete(tagId)
+      } else {
+        ids.add(tagId)
+      }
+      return {...prev, tag_ids: Array.from(ids)}
+    })
+  }, [])
+
+  const createTagMutation = useMutation({
+    mutationFn: () => createClipTag({name: newTagName.trim(), color: newTagColor}),
+    onSuccess: () => {
+      setNewTagName('')
+      invalidateClipTags()
+    },
+  })
+
+  const updateTagMutation = useMutation({
+    mutationFn: ({id, name}: {id: number | string; name: string}) => updateClipTag(id, {name}),
+    onSuccess: () => {
+      setRenamingTagId(null)
+      setRenameDraft('')
+      invalidateClipTags()
+      invalidateClips()
+    },
+  })
+
+  const deleteTagMutation = useMutation({
+    mutationFn: (id: number | string) => deleteClipTag(id),
+    onSuccess: (_data, id) => {
+      setSelectedTagIds(prev => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+      invalidateClipTags()
+      invalidateClips()
+    },
+  })
 
   useEffect(() => {
     const onCreated = () => {
@@ -281,7 +430,11 @@ export default function TextClipsTray() {
 
   const startEdit = (clip: TextClipRecord) => {
     setEditingId(clip.id)
-    setEditDraft({content: clip.content, note: clip.note ?? ''})
+    setEditDraft({
+      content: clip.content,
+      note: clip.note ?? '',
+      tag_ids: (clip.tags ?? []).map(t => t.id),
+    })
   }
 
   return (
@@ -290,6 +443,145 @@ export default function TextClipsTray() {
         {I18n.t('Text clips')}
       </Heading>
       <hr role="presentation" />
+
+      {clipTags.length > 0 && (
+        <View margin="small 0" data-testid="text-clips-tag-filter">
+          <Flex wrap="no-wrap" alignItems="center">
+            <View as="div" maxWidth="100%" overflowX="auto" overflowY="hidden" display="block">
+              <Flex wrap="no-wrap" alignItems="center">
+                {clipTags.map(tag => (
+                  <ClipTagChip
+                    key={String(tag.id)}
+                    tag={tag}
+                    selected={selectedTagIds.has(tag.id)}
+                    onClick={() => toggleFilterTag(tag.id)}
+                    testId={`text-clips-filter-tag-${tag.id}`}
+                  />
+                ))}
+              </Flex>
+            </View>
+            {selectedTagIds.size > 0 && (
+              <Button
+                size="small"
+                margin="0 0 0 x-small"
+                data-testid="text-clips-clear-filters"
+                onClick={() => setSelectedTagIds(new Set())}
+              >
+                {I18n.t('Clear')}
+              </Button>
+            )}
+          </Flex>
+        </View>
+      )}
+
+      <View margin="small 0">
+        <Button
+          size="small"
+          data-testid="text-clips-manage-tags-toggle"
+          onClick={() => setManageOpen(open => !open)}
+        >
+          {manageOpen ? I18n.t('Hide tags') : I18n.t('Manage tags')}
+        </Button>
+      </View>
+
+      {manageOpen && (
+        <View
+          as="div"
+          margin="small 0"
+          padding="small"
+          borderWidth="small"
+          data-testid="text-clips-manage-tags-panel"
+        >
+          {clipTags.map(tag => (
+            <Flex key={String(tag.id)} alignItems="center" margin="x-small 0">
+              <ClipTagChip tag={tag} />
+              {renamingTagId === tag.id ? (
+                <>
+                  <TextInput
+                    renderLabel={I18n.t('Rename tag')}
+                    display="inline-block"
+                    value={renameDraft}
+                    onChange={(_e, value) => setRenameDraft(value)}
+                    data-testid={`text-clips-rename-input-${tag.id}`}
+                  />
+                  <Button
+                    size="small"
+                    margin="0 x-small"
+                    data-testid={`text-clips-rename-save-${tag.id}`}
+                    onClick={() => updateTagMutation.mutate({id: tag.id, name: renameDraft.trim()})}
+                    interaction={updateTagMutation.isPending ? 'disabled' : 'enabled'}
+                  >
+                    {I18n.t('Save')}
+                  </Button>
+                  <Button
+                    size="small"
+                    onClick={() => {
+                      setRenamingTagId(null)
+                      setRenameDraft('')
+                    }}
+                  >
+                    {I18n.t('Cancel')}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    size="small"
+                    margin="0 x-small"
+                    data-testid={`text-clips-rename-tag-${tag.id}`}
+                    onClick={() => {
+                      setRenamingTagId(tag.id)
+                      setRenameDraft(tag.name)
+                    }}
+                  >
+                    {I18n.t('Rename')}
+                  </Button>
+                  <IconButton
+                    size="small"
+                    screenReaderLabel={I18n.t('Delete tag')}
+                    renderIcon={IconTrashLine}
+                    data-testid={`text-clips-delete-tag-${tag.id}`}
+                    onClick={() => deleteTagMutation.mutate(tag.id)}
+                    interaction={deleteTagMutation.isPending ? 'disabled' : 'enabled'}
+                  />
+                </>
+              )}
+            </Flex>
+          ))}
+          <View margin="small 0 0 0">
+            <TextInput
+              renderLabel={I18n.t('New tag name')}
+              placeholder={I18n.t('New tag')}
+              value={newTagName}
+              onChange={(_e, value) => setNewTagName(value)}
+              data-testid="text-clips-new-tag-name"
+            />
+          </View>
+          <Flex wrap="wrap" margin="x-small 0">
+            {CLIP_TAG_PALETTE.map(color => (
+              <Button
+                key={color}
+                size="small"
+                margin="0 x-small x-small 0"
+                data-testid={`text-clips-new-tag-color-${color}`}
+                onClick={() => setNewTagColor(color)}
+                color={newTagColor === color ? 'primary' : 'secondary'}
+              >
+                {color}
+              </Button>
+            ))}
+          </Flex>
+          <Button
+            size="small"
+            margin="x-small 0 0 0"
+            data-testid="text-clips-create-tag"
+            onClick={() => createTagMutation.mutate()}
+            interaction={createTagMutation.isPending || !newTagName.trim() ? 'disabled' : 'enabled'}
+          >
+            {I18n.t('Create')}
+          </Button>
+        </View>
+      )}
 
       <View margin="small 0">
         <TextInput
@@ -355,8 +647,10 @@ export default function TextClipsTray() {
                 clip={clip}
                 editingId={editingId}
                 editDraft={editDraft}
+                allTags={clipTags}
                 onStartEdit={startEdit}
                 onEditDraftChange={setEditDraft}
+                onToggleEditTag={toggleEditTag}
                 onCancelEdit={() => {
                   setEditingId(null)
                   setEditDraft(null)

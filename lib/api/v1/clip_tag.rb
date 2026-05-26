@@ -18,20 +18,18 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-module Api::V1::TextClip
+module Api::V1::ClipTag
   include Api::V1::Json
 
   API_JSON_OPTS = {
-    only: %w[id content source_url source_title note user_id course_id workflow_state created_at updated_at]
+    only: %w[id name color workflow_state created_at updated_at]
   }.freeze
 
-  def text_clip_json(clip, user, session, opts = {})
-    json = api_json(clip, user, session, opts.merge(API_JSON_OPTS))
-    json["tags"] = clip.clip_tags.map { |t| { "id" => t.id, "name" => t.name, "color" => t.color } }
-    json
+  def clip_tag_json(tag, user, session, opts = {})
+    api_json(tag, user, session, opts.merge(API_JSON_OPTS))
   end
 
-  def text_clips_json(clips, user, session, opts = {})
-    clips.map { |c| text_clip_json(c, user, session, opts) }
+  def clip_tags_json(tags, user, session, opts = {})
+    tags.map { |t| clip_tag_json(t, user, session, opts) }
   end
 end

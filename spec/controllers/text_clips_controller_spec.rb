@@ -96,6 +96,52 @@ describe TextClipsController do
         get :index, format: :json, params: { course_id: @course.id, q: "a" }
         expect(response).to have_http_status(:unprocessable_content)
       end
+
+      it "filters clips by tag_ids (OR)" do
+        tag_a = ClipTag.create!(
+          user_id: @teacher.id,
+          name: "Filter A",
+          color: "blue",
+          root_account_id: @course.root_account_id
+        )
+        tag_b = ClipTag.create!(
+          user_id: @teacher.id,
+          name: "Filter B",
+          color: "green",
+          root_account_id: @course.root_account_id
+        )
+        tagged_a = create_clip_for(@teacher, @course, "Clip with A")
+        tagged_b = create_clip_for(@teacher, @course, "Clip with B")
+        @course.shard.activate do
+          TextClipTagging.create!(text_clip: tagged_a, clip_tag: tag_a, root_account_id: @course.root_account_id)
+          TextClipTagging.create!(text_clip: tagged_b, clip_tag: tag_b, root_account_id: @course.root_account_id)
+        end
+
+        get :index, format: :json, params: { course_id: @course.id, tag_ids: [tag_a.id] }
+        expect(json_parse(response.body).pluck("id")).to eq [tagged_a.id]
+
+        get :index, format: :json, params: { course_id: @course.id, tag_ids: [tag_a.id, tag_b.id] }
+        expect(json_parse(response.body).pluck("id")).to contain_exactly(tagged_a.id, tagged_b.id)
+      end
+
+      it "serializes tags on each clip" do
+        tag = ClipTag.create!(
+          user_id: @teacher.id,
+          name: "Serialized",
+          color: "purple",
+          root_account_id: @course.root_account_id
+        )
+        @course.shard.activate do
+          TextClipTagging.create!(
+            text_clip: @teacher_clip,
+            clip_tag: tag,
+            root_account_id: @course.root_account_id
+          )
+        end
+        get :index, format: :json, params: { course_id: @course.id }
+        body = json_parse(response.body).find { |c| c["id"] == @teacher_clip.id }
+        expect(body["tags"]).to eq [{ "id" => tag.id, "name" => "Serialized", "color" => "purple" }]
+      end
     end
 
     describe "POST #create" do
@@ -179,6 +225,116 @@ describe TextClipsController do
           content: ""
         }
         expect(response).to have_http_status(:bad_request)
+      end
+
+      it "replaces taggings idempotently via tag_ids" do
+        tag_a = ClipTag.create!(
+          user_id: @teacher.id,
+          name: "Tag A",
+          color: "blue",
+          root_account_id: @course.root_account_id
+        )
+        tag_b = ClipTag.create!(
+          user_id: @teacher.id,
+          name: "Tag B",
+          color: "green",
+          root_account_id: @course.root_account_id
+        )
+        @course.shard.activate do
+          TextClipTagging.create!(
+            text_clip: @teacher_clip,
+            clip_tag: tag_a,
+            root_account_id: @course.root_account_id
+          )
+        end
+
+        put :update, format: :json, params: {
+          course_id: @course.id,
+          id: @teacher_clip.id,
+          tag_ids: [tag_b.id]
+        }
+        expect(response).to be_successful
+        body = json_parse(response.body)
+        expect(body["tags"].pluck("id")).to eq [tag_b.id]
+        active_tag_ids = @course.shard.activate do
+          @teacher_clip.reload.text_clip_taggings.active.pluck(:clip_tag_id)
+        end
+        expect(active_tag_ids).to eq [tag_b.id]
+      end
+
+      it "removes all taggings when tag_ids is empty" do
+        tag = ClipTag.create!(
+          user_id: @teacher.id,
+          name: "Removable",
+          color: "red",
+          root_account_id: @course.root_account_id
+        )
+        @course.shard.activate do
+          TextClipTagging.create!(
+            text_clip: @teacher_clip,
+            clip_tag: tag,
+            root_account_id: @course.root_account_id
+          )
+        end
+
+        put :update, as: :json, params: {
+          course_id: @course.id,
+          id: @teacher_clip.id,
+          tag_ids: []
+        }
+        expect(response).to be_successful
+        expect(json_parse(response.body)["tags"]).to eq []
+      end
+
+      it "silently ignores another user's tag ids" do
+        other_tag = ClipTag.create!(
+          user_id: @student.id,
+          name: "Student only",
+          color: "gray",
+          root_account_id: @course.root_account_id
+        )
+        own_tag = ClipTag.create!(
+          user_id: @teacher.id,
+          name: "Teacher own",
+          color: "yellow",
+          root_account_id: @course.root_account_id
+        )
+
+        put :update, format: :json, params: {
+          course_id: @course.id,
+          id: @teacher_clip.id,
+          tag_ids: [other_tag.id, own_tag.id]
+        }
+        expect(response).to be_successful
+        expect(json_parse(response.body)["tags"].pluck("id")).to eq [own_tag.id]
+      end
+
+      it "does not partially update taggings when content validation fails" do
+        tag = ClipTag.create!(
+          user_id: @teacher.id,
+          name: "Stays",
+          color: "pink",
+          root_account_id: @course.root_account_id
+        )
+        @course.shard.activate do
+          TextClipTagging.create!(
+            text_clip: @teacher_clip,
+            clip_tag: tag,
+            root_account_id: @course.root_account_id
+          )
+        end
+
+        put :update, format: :json, params: {
+          course_id: @course.id,
+          id: @teacher_clip.id,
+          content: "",
+          tag_ids: []
+        }
+        expect(response).to have_http_status(:bad_request)
+        active_count = @course.shard.activate do
+          @teacher_clip.reload.text_clip_taggings.active.count
+        end
+        expect(active_count).to eq 1
       end
     end
 

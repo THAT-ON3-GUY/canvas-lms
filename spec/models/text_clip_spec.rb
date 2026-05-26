@@ -160,4 +160,77 @@ describe TextClip do
       expect(TextClip.for_course(@course).order(:id)).to eq [@student_clip, @teacher_clip]
     end
   end
+
+  describe ".with_any_tag" do
+    before :once do
+      @tag_a = ClipTag.create!(
+        user_id: @student.id,
+        name: "Tag A",
+        color: "blue",
+        root_account_id: @course.root_account_id
+      )
+      @tag_b = ClipTag.create!(
+        user_id: @student.id,
+        name: "Tag B",
+        color: "green",
+        root_account_id: @course.root_account_id
+      )
+      @tagged_a = TextClip.create!(
+        user_id: @student.id,
+        course_id: @course.id,
+        content: "Has tag A",
+        root_account_id: @course.root_account_id
+      )
+      TextClipTagging.create!(
+        text_clip: @tagged_a,
+        clip_tag: @tag_a,
+        root_account_id: @course.root_account_id
+      )
+      @tagged_b = TextClip.create!(
+        user_id: @student.id,
+        course_id: @course.id,
+        content: "Has tag B",
+        root_account_id: @course.root_account_id
+      )
+      TextClipTagging.create!(
+        text_clip: @tagged_b,
+        clip_tag: @tag_b,
+        root_account_id: @course.root_account_id
+      )
+    end
+
+    it "returns all clips when tag_ids is empty" do
+      expect(TextClip.with_any_tag([]).order(:id)).to eq TextClip.order(:id).to_a
+    end
+
+    it "filters to clips with the given tag" do
+      expect(TextClip.with_any_tag([@tag_a.id]).order(:id)).to eq [@tagged_a]
+    end
+
+    it "matches any of multiple tag ids (OR)" do
+      expect(TextClip.with_any_tag([@tag_a.id, @tag_b.id]).order(:id)).to eq [@tagged_a, @tagged_b]
+    end
+  end
+
+  describe "clip_tags association" do
+    it "returns only active tags through active taggings" do
+      tag = ClipTag.create!(
+        user_id: @student.id,
+        name: "Active tag",
+        color: "purple",
+        root_account_id: @course.root_account_id
+      )
+      tagging = TextClipTagging.create!(
+        text_clip: @student_clip,
+        clip_tag: tag,
+        root_account_id: @course.root_account_id
+      )
+      expect(@student_clip.clip_tags).to eq [tag]
+
+      tagging.destroy
+      tag.destroy
+      @student_clip.reload
+      expect(@student_clip.clip_tags).to eq []
+    end
+  end
 end

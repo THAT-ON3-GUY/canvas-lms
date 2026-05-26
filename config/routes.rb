@@ -2893,6 +2893,13 @@ CanvasRails::Application.routes.draw do
       post "courses/:course_id/text_clips/:id/undestroy", action: :undestroy, as: :undestroy_course_text_clip
     end
 
+    scope(controller: :clip_tags) do
+      get "users/:user_id/clip_tags", action: :index, as: :user_clip_tags
+      post "users/:user_id/clip_tags", action: :create
+      put "users/:user_id/clip_tags/:id", action: :update
+      delete "users/:user_id/clip_tags/:id", action: :destroy
+    end
+
     scope(controller: :content_shares) do
       post "users/:user_id/content_shares", action: :create
       get "users/:user_id/content_shares/sent", action: :index, defaults: { list: "sent" }, as: :user_sent_content_shares

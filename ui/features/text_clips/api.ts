@@ -17,18 +17,73 @@
  */
 
 import doFetchApi from '@canvas/do-fetch-api-effect'
-import type {TextClipCreate, TextClipRecord, TextClipUpdate, TextClipsPage} from './types'
+import type {
+  ClipTagColor,
+  ClipTagRecord,
+  TextClipCreate,
+  TextClipRecord,
+  TextClipUpdate,
+  TextClipsPage,
+} from './types'
 
 export function textClipsIndexPath(
   courseId: string | number,
-  opts?: {q?: string; perPage?: number},
+  opts?: {q?: string; perPage?: number; tagIds?: Array<number | string>},
 ): string {
   const params = new URLSearchParams()
   params.set('per_page', String(opts?.perPage ?? 20))
   if (opts?.q) {
     params.set('q', opts.q)
   }
+  for (const tagId of opts?.tagIds ?? []) {
+    params.append('tag_ids[]', String(tagId))
+  }
   return `/api/v1/courses/${courseId}/text_clips?${params.toString()}`
+}
+
+export async function fetchClipTags(): Promise<ClipTagRecord[]> {
+  const {json} = await doFetchApi<ClipTagRecord[]>({
+    path: '/api/v1/users/self/clip_tags',
+    method: 'GET',
+  })
+  return json ?? []
+}
+
+export async function createClipTag(body: {
+  name: string
+  color: ClipTagColor
+}): Promise<ClipTagRecord> {
+  const {json} = await doFetchApi<ClipTagRecord>({
+    path: '/api/v1/users/self/clip_tags',
+    method: 'POST',
+    body,
+  })
+  if (!json) {
+    throw new Error('createClipTag: empty response')
+  }
+  return json
+}
+
+export async function updateClipTag(
+  id: string | number,
+  body: Partial<{name: string; color: ClipTagColor}>,
+): Promise<ClipTagRecord> {
+  const {json} = await doFetchApi<ClipTagRecord>({
+    path: `/api/v1/users/self/clip_tags/${id}`,
+    method: 'PUT',
+    body,
+  })
+  if (!json) {
+    throw new Error('updateClipTag: empty response')
+  }
+  return json
+}
+
+export async function deleteClipTag(id: string | number): Promise<void> {
+  await doFetchApi({
+    path: `/api/v1/users/self/clip_tags/${id}`,
+    method: 'DELETE',
+  })
 }
 
 export async function fetchTextClipsPage(path: string): Promise<TextClipsPage> {

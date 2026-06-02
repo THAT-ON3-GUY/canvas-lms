@@ -423,4 +423,85 @@ describe('TextClipsTray', () => {
     await user.click(screen.getByTestId('text-clips-undo-button'))
     await waitFor(() => expect(screen.getByText(/alpha/)).toBeInTheDocument())
   })
+
+  it('in global mode lists clips with course labels and course filter chips', async () => {
+    delete window.ENV.COURSE_ID
+    const user = userEvent.setup()
+    server.use(
+      http.get('*/api/v1/users/self/clip_tags', () => HttpResponse.json([])),
+      http.get('*/api/v1/users/self/text_clips', ({request}) => {
+        const url = new URL(request.url)
+        if (url.searchParams.getAll('course_ids[]').includes('7')) {
+          return HttpResponse.json([{...baseClip, id: 1, course: {id: 7, name: 'Math 101'}}])
+        }
+        return HttpResponse.json([
+          {...baseClip, id: 1, course: {id: 7, name: 'Math 101'}},
+          {...baseClip, id: 2, content: 'beta', course: {id: 8, name: 'History 201'}},
+        ])
+      }),
+    )
+    render(
+      <MockedQueryProvider>
+        <TextClipsTray />
+      </MockedQueryProvider>,
+    )
+    await waitFor(() =>
+      expect(screen.getByTestId('text-clip-course-1')).toHaveTextContent('Math 101'),
+    )
+    expect(screen.getByTestId('text-clips-filter-course-7')).toBeInTheDocument()
+    expect(screen.getByText(/beta/)).toBeInTheDocument()
+    await user.click(screen.getByTestId('text-clips-filter-course-7'))
+    await waitFor(() => expect(screen.queryByText(/beta/)).not.toBeInTheDocument())
+  })
+
+  it('in global mode narrows the query when a course chip is selected', async () => {
+    delete window.ENV.COURSE_ID
+    const user = userEvent.setup()
+    const requests: string[] = []
+    server.use(
+      http.get('*/api/v1/users/self/clip_tags', () => HttpResponse.json([])),
+      http.get('*/api/v1/users/self/text_clips', ({request}) => {
+        requests.push(request.url)
+        const url = new URL(request.url)
+        if (url.searchParams.getAll('course_ids[]').includes('7')) {
+          return HttpResponse.json([{...baseClip, id: 1, course: {id: 7, name: 'Math 101'}}])
+        }
+        return HttpResponse.json([
+          {...baseClip, id: 1, course: {id: 7, name: 'Math 101'}},
+          {...baseClip, id: 2, content: 'beta', course: {id: 8, name: 'History 201'}},
+        ])
+      }),
+    )
+    render(
+      <MockedQueryProvider>
+        <TextClipsTray />
+      </MockedQueryProvider>,
+    )
+    await waitFor(() => expect(screen.getByText(/beta/)).toBeInTheDocument())
+    await user.click(screen.getByTestId('text-clips-filter-course-7'))
+    await waitFor(() => expect(requests.some(url => url.includes('course_ids'))).toBe(true))
+  })
+
+  it('in course mode does not render course filter or course labels', async () => {
+    window.ENV.COURSE_ID = '7'
+    server.use(
+      http.get('*/api/v1/users/self/clip_tags', () => HttpResponse.json([])),
+      http.get('*/api/v1/courses/7/text_clips', () =>
+        HttpResponse.json([
+          {
+            ...baseClip,
+            course: {id: 7, name: 'Math 101'},
+          },
+        ]),
+      ),
+    )
+    render(
+      <MockedQueryProvider>
+        <TextClipsTray />
+      </MockedQueryProvider>,
+    )
+    await waitFor(() => expect(screen.getByText(/alpha/)).toBeInTheDocument())
+    expect(screen.queryByTestId('text-clips-course-filter')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('text-clip-course-1')).not.toBeInTheDocument()
+  })
 })

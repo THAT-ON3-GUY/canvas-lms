@@ -20,19 +20,22 @@
 
 # @API Text clips
 #
-# Private text clips for the current user within a course.
+# Private text clips for the current user within a course or across all courses.
 #
 class TextClipsController < ApplicationController
   include Api::V1::TextClip
 
   before_action :require_user
-  before_action :require_context_and_read_access
-  before_action :require_course_context
-  before_action :check_limited_access_for_students, only: %i[index create update destroy undestroy]
+  before_action :load_clip_context
+  before_action :require_context_and_read_access, if: :course_scoped?
+  before_action :require_course_context, if: :course_scoped?
+  before_action :check_limited_access_for_students, only: %i[index create update destroy undestroy], if: :course_scoped?
 
   # @API List text clips
   #
-  # Returns clips for the current user in the course, newest first.
+  # Returns clips for the current user, newest first. Course-scoped routes
+  # return clips for that course; user-scoped routes return clips across all
+  # courses with optional course_ids[] filtering.
   #
   def index
     q = params[:q].to_s
@@ -42,17 +45,21 @@ class TextClipsController < ApplicationController
     end
 
     tag_ids = Array(params[:tag_ids]).map(&:to_i).reject(&:zero?)
+    course_ids = Array(params[:course_ids]).map(&:to_i).reject(&:zero?)
 
-    clips = @context.shard.activate do
-      @current_user.text_clips
-                   .active
-                   .for_course(@context)
-                   .searchable(q)
-                   .with_any_tag(tag_ids)
-                   .preload(:clip_tags)
-                   .order(created_at: :desc)
+    clips = clip_query_scope do
+      base = @current_user.text_clips
+                          .active
+                          .searchable(q)
+                          .with_any_tag(tag_ids)
+                          .preload(:clip_tags, :course)
+      if course_scoped?
+        base.for_course(@context)
+      else
+        base.for_courses(course_ids)
+      end.order(created_at: :desc)
     end
-    paginated = Api.paginate(clips, self, api_v1_course_text_clips_url(@context))
+    paginated = Api.paginate(clips, self, index_url)
     render json: text_clips_json(paginated, @current_user, session)
   end
 
@@ -64,15 +71,16 @@ class TextClipsController < ApplicationController
   #
   def create
     attrs = create_params.to_h.symbolize_keys
-    clip = nil
-    @context.shard.activate do
-      clip = @current_user.text_clips.build(
-        course: @context,
+    clip = clip_query_scope do
+      built = @current_user.text_clips.build(
+        course: course_scoped? ? @context : nil,
         content: attrs[:content],
         source_url: attrs[:source_url].presence,
         source_title: attrs[:source_title].presence
       )
-      clip.save
+      built.root_account_id ||= @domain_root_account.id unless course_scoped?
+      built.save
+      built
     end
     if clip&.persisted?
       render json: text_clip_json(clip, @current_user, session), status: :created
@@ -96,14 +104,14 @@ class TextClipsController < ApplicationController
               end
     attrs = normalized_update_params(permitted.except("tag_ids"))
 
-    ok = @context.shard.activate do
+    ok = on_clip_shard(clip) do
       ActiveRecord::Base.transaction do
         (attrs.empty? || clip.update(attrs)) && sync_clip_taggings(clip, tag_ids)
       end
     end
 
     if ok
-      clip = @context.shard.activate { TextClip.preload(:clip_tags).find(clip.id) }
+      clip = on_clip_shard(clip) { TextClip.preload(:clip_tags, :course).find(clip.id) }
       render json: text_clip_json(clip, @current_user, session)
     else
       render json: clip.errors, status: :bad_request
@@ -130,17 +138,45 @@ class TextClipsController < ApplicationController
     return unless clip.is_a?(TextClip)
 
     if clip.deleted?
-      @context.shard.activate { clip.undestroy }
+      on_clip_shard(clip) { clip.undestroy }
+      clip = on_clip_shard(clip) { TextClip.preload(:clip_tags, :course).find(clip.id) }
     end
     render json: text_clip_json(clip, @current_user, session)
   end
 
   private
 
+  def load_clip_context
+    @global_scope = params[:user_id].present?
+  end
+
+  def course_scoped?
+    !@global_scope
+  end
+
+  def clip_query_scope(&)
+    course_scoped? ? @context.shard.activate(&) : yield
+  end
+
+  def index_url
+    course_scoped? ? api_v1_course_text_clips_url(@context) : api_v1_user_text_clips_url("self")
+  end
+
+  def on_clip_shard(clip, &)
+    if course_scoped?
+      @context.shard.activate(&)
+    elsif clip.course_id
+      Course.find(clip.course_id).shard.activate(&)
+    else
+      @current_user.shard.activate(&)
+    end
+  end
+
   def find_clip_for_current_user(active:)
-    scope = @current_user.text_clips.for_course(@context)
+    scope = @current_user.text_clips
+    scope = scope.for_course(@context) if course_scoped?
     scope = scope.active if active
-    @context.shard.activate { scope.find(params[:id]) }
+    clip_query_scope { scope.find(params[:id]) }
   rescue ActiveRecord::RecordNotFound
     render json: { errors: [{ message: "not found" }] }, status: :not_found
     nil

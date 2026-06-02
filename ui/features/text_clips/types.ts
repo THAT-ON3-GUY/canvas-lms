@@ -48,6 +48,7 @@ export type TextClipRecord = {
   source_title?: string | null
   note?: string | null
   tags?: TextClipTagStub[]
+  course?: {id: number | string; name: string} | null
   user_id: number
   course_id: number | null
   workflow_state: string

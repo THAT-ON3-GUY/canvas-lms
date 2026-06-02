@@ -41,6 +41,26 @@ export function textClipsIndexPath(
   return `/api/v1/courses/${courseId}/text_clips?${params.toString()}`
 }
 
+export function globalTextClipsIndexPath(opts?: {
+  q?: string
+  perPage?: number
+  tagIds?: Array<number | string>
+  courseIds?: Array<number | string>
+}): string {
+  const params = new URLSearchParams()
+  params.set('per_page', String(opts?.perPage ?? 20))
+  if (opts?.q) {
+    params.set('q', opts.q)
+  }
+  for (const tagId of opts?.tagIds ?? []) {
+    params.append('tag_ids[]', String(tagId))
+  }
+  for (const courseId of opts?.courseIds ?? []) {
+    params.append('course_ids[]', String(courseId))
+  }
+  return `/api/v1/users/self/text_clips?${params.toString()}`
+}
+
 export async function fetchClipTags(): Promise<ClipTagRecord[]> {
   const {json} = await doFetchApi<ClipTagRecord[]>({
     path: '/api/v1/users/self/clip_tags',
@@ -150,6 +170,51 @@ export async function undeleteTextClip(
   })
   if (!json) {
     throw new Error('undeleteTextClip: empty response')
+  }
+  return json
+}
+
+export async function createGlobalTextClip(body: TextClipCreate): Promise<TextClipRecord> {
+  const {json} = await doFetchApi<TextClipRecord>({
+    path: '/api/v1/users/self/text_clips',
+    method: 'POST',
+    body,
+  })
+  if (!json) {
+    throw new Error('createGlobalTextClip: empty response')
+  }
+  return json
+}
+
+export async function deleteGlobalTextClip(id: string | number): Promise<void> {
+  await doFetchApi({
+    path: `/api/v1/users/self/text_clips/${id}`,
+    method: 'DELETE',
+  })
+}
+
+export async function updateGlobalTextClip(
+  id: string | number,
+  body: TextClipUpdate,
+): Promise<TextClipRecord> {
+  const {json} = await doFetchApi<TextClipRecord>({
+    path: `/api/v1/users/self/text_clips/${id}`,
+    method: 'PUT',
+    body,
+  })
+  if (!json) {
+    throw new Error('updateGlobalTextClip: empty response')
+  }
+  return json
+}
+
+export async function undeleteGlobalTextClip(id: string | number): Promise<TextClipRecord> {
+  const {json} = await doFetchApi<TextClipRecord>({
+    path: `/api/v1/users/self/text_clips/${id}/undestroy`,
+    method: 'POST',
+  })
+  if (!json) {
+    throw new Error('undeleteGlobalTextClip: empty response')
   }
   return json
 }

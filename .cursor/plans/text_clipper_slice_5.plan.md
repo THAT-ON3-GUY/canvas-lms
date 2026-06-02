@@ -4,46 +4,46 @@ overview: "Surface clips across every course. The `text_clips.course_id` column 
 todos:
   - id: layout_guard_global
     content: "app/views/layouts/application.html.erb — relax `js_bundle(:text_clips) if @context.is_a?(Course) && @current_user` to `if @current_user` so the selection bundle is even on the page outside of courses (dashboard, profile, account, etc.). No new ENV gate; the in-bundle `ready()` check still no-ops when the user isn't logged in."
-    status: pending
+    status: completed
   - id: model_root_account_fallback
     content: "app/models/text_clip.rb — switch from `resolves_root_account through: :course` to the lambda form so a `course_id: nil` clip resolves through `user.root_account_id` (see `role_override.rb` for the pattern). This is what makes the existing `null: false` constraint on `root_account_id` survive global clips."
-    status: pending
+    status: completed
   - id: controller_global_index_and_create
     content: "app/controllers/text_clips_controller.rb — accept both course and global contexts: skip course-required filters when `params[:user_id]` is in the route; #index returns cross-course clips, accepts `course_ids[]` filter, still honors `q` + `tag_ids[]`; #create with no course_id creates a `course_id: nil` clip; #update / #destroy / #undestroy work via `@current_user.text_clips` regardless of context"
-    status: pending
+    status: completed
   - id: routes_global
     content: "config/routes.rb — add `scope(controller: :text_clips)` routes under `users/:user_id/text_clips` (GET, POST, PUT/:id, DELETE/:id, POST/:id/undestroy) inside ApiRouteSet::V1.draw"
-    status: pending
+    status: completed
   - id: serializer_course_stub
     content: "lib/api/v1/text_clip.rb — include a `course` stub ({id, name} or null) on each clip; controller preloads `:course`"
-    status: pending
+    status: completed
   - id: model_global_scopes
     content: "app/models/text_clip.rb — add `scope :for_courses, ->(ids) { ids.blank? ? all : where(course_id: ids) }` (no-op on blank); ensure `for_user` + `searchable` + `with_any_tag` compose cleanly without a course"
-    status: pending
+    status: completed
   - id: sidenav_global_entry
     content: "ui/features/navigation_header/react/SideNav.tsx — show the IconBookmarkLine 'Text clips' SideNav.Item unconditionally (not gated on `courseIdForClips`); persist tray-open state under a single `text_clips_tray_open` key (no course suffix)"
-    status: pending
+    status: completed
   - id: tray_mode_and_course_filter
     content: "TextClipsTray.tsx — switch from `window.ENV.COURSE_ID` to a `mode = courseId ? 'course' : 'global'` prop derived from ENV; in global mode call the new `/users/self/text_clips` endpoint and render a course filter chip strip (`selectedCourseIds: Set`); each clip row shows a small course label ('Math 101') from `clip.course?.name`; in course mode behavior is unchanged"
-    status: pending
+    status: completed
   - id: frontend_api_global
     content: "ui/features/text_clips/api.ts + types.ts — add `globalTextClipsIndexPath(opts)` that hits `/api/v1/users/self/text_clips` with `q`, `tag_ids[]`, `course_ids[]`; extend `TextClipRecord` with `course?: { id, name } | null`; keep the existing course-scoped wrappers and add `createGlobalTextClip`, `updateTextClipGlobal`, etc. (or refactor existing wrappers to accept `{ scope: 'course' | 'global' }`)"
-    status: pending
+    status: completed
   - id: selection_clip_global_optin
     content: "ui/features/text_clips/index.tsx — drop the `COURSE_ID` early-return; when no course is active, the selection overlay still appears but the POST goes to `/users/self/text_clips` (course_id absent → null); when on a course page, keep the current course-scoped POST"
-    status: pending
+    status: completed
   - id: dedicated_route_optional
     content: "(optional, low risk) Surface a `/text_clips` page that mounts the global tray full-width for users who prefer not to use the side panel — gate behind ENV.FEATURES if needed; can be deferred to Slice 6"
-    status: pending
+    status: cancelled
   - id: backend_specs_slice5
     content: "Extend spec/controllers/text_clips_controller_spec.rb: GET /users/self/text_clips returns cross-course clips; respects course_ids[]; respects tag_ids[]; respects q; POST without course_id creates a global clip; PUT/DELETE/undestroy work via /users/self; cross-user 404. Add spec/models/text_clip_spec.rb cases for `for_courses` scope."
-    status: pending
+    status: completed
   - id: frontend_tests_slice5
     content: "Update api.test.ts (global wrappers issue correct paths) and TextClipsTray.test.tsx (global mode renders course labels + course filter chips + cross-course list; selecting a course chip narrows the query; selection-clip without COURSE_ID still saves and hits /users/self/text_clips)"
-    status: pending
+    status: completed
   - id: verify_slice5
     content: "Run bin/rspec, yarn test, yarn check:ts, bin/rubocop on touched Ruby; walk through Slice-5 manual checklist"
-    status: pending
+    status: completed
 isProject: false
 ---
 

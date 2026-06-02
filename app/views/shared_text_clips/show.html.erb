@@ -1,0 +1,31 @@
+<%# Copyright (C) 2026 - present Instructure, Inc. %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= t("Shared text clip", :scope => :text_clips) %></title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem; max-width: 48rem; line-height: 1.5; }
+    .meta { color: #555; font-size: 0.875rem; margin-top: 1rem; }
+    .content { white-space: pre-wrap; margin-top: 1rem; }
+    a { color: #0374b5; }
+  </style>
+</head>
+<body>
+  <h1><%= t("Shared text clip", :scope => :text_clips) %></h1>
+  <div class="content"><%= h(@clip.content) %></div>
+  <% if @clip.source_url.present? %>
+    <p class="meta">
+      <%= t("Source", :scope => :text_clips) %>:
+      <a href="<%= h(@clip.source_url) %>" rel="noopener noreferrer">
+        <%= h(@clip.source_title.presence || @clip.source_url) %>
+      </a>
+    </p>
+  <% end %>
+  <% if @clip.course %>
+    <p class="meta"><%= t("Course", :scope => :text_clips) %>: <%= h(@clip.course.name) %></p>
+  <% end %>
+  <p class="meta"><%= t("Saved", :scope => :text_clips) %>: <%= l(@clip.created_at, format: :long) %></p>
+</body>
+</html>

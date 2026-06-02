@@ -24,7 +24,11 @@ import {
   deleteClipTag,
   fetchClipTags,
   globalTextClipsIndexPath,
+  shareGlobalTextClip,
+  shareTextClip,
   textClipsIndexPath,
+  unshareGlobalTextClip,
+  unshareTextClip,
   undeleteTextClip,
   updateClipTag,
   updateTextClip,
@@ -98,6 +102,48 @@ describe('text_clips api', () => {
     expect(path).toContain('tag_ids%5B%5D=1')
     expect(path).toContain('course_ids%5B%5D=7')
     expect(path).toContain('course_ids%5B%5D=9')
+  })
+
+  it('shareTextClip POSTs to course share endpoint', async () => {
+    doFetchApi.mockResolvedValueOnce({
+      json: {token: 'abc', url: 'https://example.com/text_clips/shared/abc'},
+      response: new Response(),
+      text: '',
+    })
+    await shareTextClip('42', 9)
+    expect(doFetchApi).toHaveBeenCalledWith({
+      path: '/api/v1/courses/42/text_clips/9/share',
+      method: 'POST',
+    })
+  })
+
+  it('unshareTextClip DELETEs course share endpoint', async () => {
+    await unshareTextClip('42', 9)
+    expect(doFetchApi).toHaveBeenCalledWith({
+      path: '/api/v1/courses/42/text_clips/9/share',
+      method: 'DELETE',
+    })
+  })
+
+  it('shareGlobalTextClip POSTs to users/self share endpoint', async () => {
+    doFetchApi.mockResolvedValueOnce({
+      json: {token: 'xyz', url: 'https://example.com/text_clips/shared/xyz'},
+      response: new Response(),
+      text: '',
+    })
+    await shareGlobalTextClip(3)
+    expect(doFetchApi).toHaveBeenCalledWith({
+      path: '/api/v1/users/self/text_clips/3/share',
+      method: 'POST',
+    })
+  })
+
+  it('unshareGlobalTextClip DELETEs users/self share endpoint', async () => {
+    await unshareGlobalTextClip(3)
+    expect(doFetchApi).toHaveBeenCalledWith({
+      path: '/api/v1/users/self/text_clips/3/share',
+      method: 'DELETE',
+    })
   })
 
   it('createGlobalTextClip POSTs to users/self/text_clips', async () => {

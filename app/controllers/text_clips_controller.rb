@@ -29,7 +29,9 @@ class TextClipsController < ApplicationController
   before_action :load_clip_context
   before_action :require_context_and_read_access, if: :course_scoped?
   before_action :require_course_context, if: :course_scoped?
-  before_action :check_limited_access_for_students, only: %i[index create update destroy undestroy], if: :course_scoped?
+  before_action :check_limited_access_for_students,
+                only: %i[index create update destroy undestroy share unshare],
+                if: :course_scoped?
 
   # @API List text clips
   #
@@ -52,7 +54,7 @@ class TextClipsController < ApplicationController
                           .active
                           .searchable(q)
                           .with_any_tag(tag_ids)
-                          .preload(:clip_tags, :course)
+                          .preload(:clip_tags, :course, :active_text_clip_share)
       if course_scoped?
         base.for_course(@context)
       else
@@ -60,7 +62,7 @@ class TextClipsController < ApplicationController
       end.order(created_at: :desc)
     end
     paginated = Api.paginate(clips, self, index_url)
-    render json: text_clips_json(paginated, @current_user, session)
+    render json: text_clips_json(paginated, @current_user, session, { host: request.host_with_port })
   end
 
   # @API Create a text clip
@@ -129,6 +131,39 @@ class TextClipsController < ApplicationController
     else
       render json: clip.errors, status: :bad_request
     end
+  end
+
+  # @API Create or return a read-only share link for a text clip
+  #
+  def share
+    clip = find_clip_for_current_user(active: true)
+    return unless clip.is_a?(TextClip)
+
+    share_record = on_clip_shard(clip) do
+      existing = clip.active_share
+      next existing if existing
+
+      share = clip.text_clip_shares.build(user: @current_user)
+      if share.save
+        share
+      else
+        render json: share.errors, status: :unprocessable_content
+        return
+      end
+    end
+    render json: text_clip_share_json(share_record, host: request.host_with_port), status: :ok
+  end
+
+  # @API Revoke the read-only share link for a text clip
+  #
+  def unshare
+    clip = find_clip_for_current_user(active: true)
+    return unless clip.is_a?(TextClip)
+
+    on_clip_shard(clip) do
+      clip.text_clip_shares.active.find_each(&:destroy)
+    end
+    render json: { revoked: true }, status: :ok
   end
 
   # @API Restore a soft-deleted text clip

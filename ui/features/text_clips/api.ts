@@ -22,6 +22,7 @@ import type {
   ClipTagRecord,
   TextClipCreate,
   TextClipRecord,
+  TextClipShareRecord,
   TextClipUpdate,
   TextClipsPage,
 } from './types'
@@ -217,4 +218,46 @@ export async function undeleteGlobalTextClip(id: string | number): Promise<TextC
     throw new Error('undeleteGlobalTextClip: empty response')
   }
   return json
+}
+
+export async function shareTextClip(
+  courseId: string | number,
+  id: string | number,
+): Promise<TextClipShareRecord> {
+  const {json} = await doFetchApi<TextClipShareRecord>({
+    path: `/api/v1/courses/${courseId}/text_clips/${id}/share`,
+    method: 'POST',
+  })
+  if (!json) {
+    throw new Error('shareTextClip: empty response')
+  }
+  return json
+}
+
+export async function unshareTextClip(
+  courseId: string | number,
+  id: string | number,
+): Promise<void> {
+  await doFetchApi({
+    path: `/api/v1/courses/${courseId}/text_clips/${id}/share`,
+    method: 'DELETE',
+  })
+}
+
+export async function shareGlobalTextClip(id: string | number): Promise<TextClipShareRecord> {
+  const {json} = await doFetchApi<TextClipShareRecord>({
+    path: `/api/v1/users/self/text_clips/${id}/share`,
+    method: 'POST',
+  })
+  if (!json) {
+    throw new Error('shareGlobalTextClip: empty response')
+  }
+  return json
+}
+
+export async function unshareGlobalTextClip(id: string | number): Promise<void> {
+  await doFetchApi({
+    path: `/api/v1/users/self/text_clips/${id}/share`,
+    method: 'DELETE',
+  })
 }

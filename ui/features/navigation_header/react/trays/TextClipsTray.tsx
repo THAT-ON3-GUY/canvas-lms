@@ -36,12 +36,16 @@ import {useInfiniteQuery, useMutation, useQuery, useQueryClient} from '@tanstack
 import {
   createClipTag,
   deleteClipTag,
+  deleteGlobalTextClip,
   deleteTextClip,
   fetchClipTags,
   fetchTextClipsPage,
+  globalTextClipsIndexPath,
   textClipsIndexPath,
+  undeleteGlobalTextClip,
   undeleteTextClip,
   updateClipTag,
+  updateGlobalTextClip,
   updateTextClip,
 } from '../../../text_clips/api'
 import {CLIP_TAG_PALETTE, CLIP_TAG_THEME} from '../../../text_clips/tagColors'
@@ -112,6 +116,7 @@ type TextClipListItemProps = {
   editingId: number | string | null
   editDraft: EditDraft | null
   allTags: ClipTagRecord[]
+  showCourseLabel?: boolean
   onStartEdit: (clip: TextClipRecord) => void
   onEditDraftChange: (draft: EditDraft) => void
   onCancelEdit: () => void
@@ -127,6 +132,7 @@ function TextClipListItem({
   editingId,
   editDraft,
   allTags,
+  showCourseLabel,
   onStartEdit,
   onEditDraftChange,
   onCancelEdit,
@@ -225,6 +231,16 @@ function TextClipListItem({
                 </Text>
               </View>
             )}
+            {showCourseLabel && clip.course && (
+              <Text
+                as="div"
+                size="x-small"
+                color="secondary"
+                data-testid={`text-clip-course-${clip.id}`}
+              >
+                {clip.course.name}
+              </Text>
+            )}
             <View margin="xx-small 0 0 0">
               {clip.source_url && (
                 <Link
@@ -267,9 +283,11 @@ function TextClipListItem({
 export default function TextClipsTray() {
   const queryClient = useQueryClient()
   const courseId = window.ENV.COURSE_ID
+  const mode: 'course' | 'global' = courseId ? 'course' : 'global'
   const [searchInput, setSearchInput] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [selectedTagIds, setSelectedTagIds] = useState<Set<number | string>>(new Set())
+  const [selectedCourseIds, setSelectedCourseIds] = useState<Set<number | string>>(new Set())
   const [manageOpen, setManageOpen] = useState(false)
   const [newTagName, setNewTagName] = useState('')
   const [newTagColor, setNewTagColor] = useState<ClipTagColor>('blue')
@@ -297,6 +315,21 @@ export default function TextClipsTray() {
     () => Array.from(selectedTagIds).sort((a, b) => String(a).localeCompare(String(b))),
     [selectedTagIds],
   )
+  const selectedCourseIdsArray = useMemo(
+    () => Array.from(selectedCourseIds).sort((a, b) => String(a).localeCompare(String(b))),
+    [selectedCourseIds],
+  )
+
+  const queryKey =
+    mode === 'course'
+      ? (['text_clips', 'course', courseId, debouncedSearch, selectedTagIdsArray] as const)
+      : ([
+          'text_clips',
+          'global',
+          debouncedSearch,
+          selectedTagIdsArray,
+          selectedCourseIdsArray,
+        ] as const)
 
   const clipTagsQueryKey = ['clip_tags'] as const
   const {data: clipTags = []} = useQuery({
@@ -304,29 +337,63 @@ export default function TextClipsTray() {
     queryFn: fetchClipTags,
   })
 
-  const queryKey = ['text_clips', courseId, debouncedSearch, selectedTagIdsArray] as const
+  const initialPageParam =
+    mode === 'course'
+      ? textClipsIndexPath(courseId as string | number, {
+          q: debouncedSearch || undefined,
+          tagIds: selectedTagIdsArray.length > 0 ? selectedTagIdsArray : undefined,
+        })
+      : globalTextClipsIndexPath({
+          q: debouncedSearch || undefined,
+          tagIds: selectedTagIdsArray.length > 0 ? selectedTagIdsArray : undefined,
+          courseIds: selectedCourseIdsArray.length > 0 ? selectedCourseIdsArray : undefined,
+        })
 
   const {data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage} =
     useInfiniteQuery({
       queryKey,
       queryFn: ({pageParam}) => fetchTextClipsPage(pageParam),
       getNextPageParam: page => page.nextPage ?? undefined,
-      initialPageParam: textClipsIndexPath(courseId as string | number, {
-        q: debouncedSearch || undefined,
-        tagIds: selectedTagIdsArray.length > 0 ? selectedTagIdsArray : undefined,
-      }),
-      enabled: Boolean(courseId) && !searchTooShort,
+      initialPageParam,
+      enabled: (mode === 'course' ? Boolean(courseId) : true) && !searchTooShort,
     })
 
   const clips = useMemo(() => data?.pages.flatMap(page => page.json) ?? [], [data?.pages])
 
+  const courseFilterOptions = useMemo(() => {
+    if (mode !== 'global') return []
+    const byId = new Map<number | string, string>()
+    for (const clip of clips) {
+      if (clip.course?.id != null && clip.course.name) {
+        byId.set(clip.course.id, clip.course.name)
+      }
+    }
+    return Array.from(byId.entries())
+      .map(([id, name]) => ({id, name}))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [clips, mode])
+
   const invalidateClips = () => {
-    void queryClient.invalidateQueries({queryKey: ['text_clips', courseId]})
+    void queryClient.invalidateQueries({
+      queryKey: mode === 'course' ? ['text_clips', 'course', courseId] : ['text_clips', 'global'],
+    })
   }
 
   const invalidateClipTags = () => {
     void queryClient.invalidateQueries({queryKey: clipTagsQueryKey})
   }
+
+  const toggleFilterCourse = useCallback((courseFilterId: number | string) => {
+    setSelectedCourseIds(prev => {
+      const next = new Set(prev)
+      if (next.has(courseFilterId)) {
+        next.delete(courseFilterId)
+      } else {
+        next.add(courseFilterId)
+      }
+      return next
+    })
+  }, [])
 
   const toggleFilterTag = useCallback((tagId: number | string) => {
     setSelectedTagIds(prev => {
@@ -392,11 +459,13 @@ export default function TextClipsTray() {
     }
     window.addEventListener('text-clips:created', onCreated)
     return () => window.removeEventListener('text-clips:created', onCreated)
-  }, [queryClient, courseId])
+  }, [queryClient, mode, courseId])
 
   const updateMutation = useMutation({
     mutationFn: ({id, body}: {id: number | string; body: TextClipUpdate}) =>
-      updateTextClip(courseId as string | number, id, body),
+      mode === 'course'
+        ? updateTextClip(courseId as string | number, id, body)
+        : updateGlobalTextClip(id, body),
     onSuccess: () => {
       setEditingId(null)
       setEditDraft(null)
@@ -405,7 +474,10 @@ export default function TextClipsTray() {
   })
 
   const undoMutation = useMutation({
-    mutationFn: (id: number | string) => undeleteTextClip(courseId as string | number, id),
+    mutationFn: (id: number | string) =>
+      mode === 'course'
+        ? undeleteTextClip(courseId as string | number, id)
+        : undeleteGlobalTextClip(id),
     onSuccess: () => {
       setPendingUndo(null)
       invalidateClips()
@@ -414,7 +486,10 @@ export default function TextClipsTray() {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number | string) => deleteTextClip(courseId as string | number, id),
+    mutationFn: (id: number | string) =>
+      mode === 'course'
+        ? deleteTextClip(courseId as string | number, id)
+        : deleteGlobalTextClip(id),
     onSuccess: (_data, id) => {
       const deleted = clips.find(clip => clip.id === id)
       setPendingUndo({
@@ -443,6 +518,36 @@ export default function TextClipsTray() {
         {I18n.t('Text clips')}
       </Heading>
       <hr role="presentation" />
+
+      {mode === 'global' && courseFilterOptions.length > 0 && (
+        <View margin="small 0" data-testid="text-clips-course-filter">
+          <Flex wrap="no-wrap" alignItems="center">
+            <View as="div" maxWidth="100%" overflowX="auto" overflowY="hidden" display="block">
+              <Flex wrap="no-wrap" alignItems="center">
+                {courseFilterOptions.map(course => (
+                  <ClipTagChip
+                    key={String(course.id)}
+                    tag={{id: course.id, name: course.name, color: 'gray'}}
+                    selected={selectedCourseIds.has(course.id)}
+                    onClick={() => toggleFilterCourse(course.id)}
+                    testId={`text-clips-filter-course-${course.id}`}
+                  />
+                ))}
+              </Flex>
+            </View>
+            {selectedCourseIds.size > 0 && (
+              <Button
+                size="small"
+                margin="0 0 0 x-small"
+                data-testid="text-clips-clear-course-filters"
+                onClick={() => setSelectedCourseIds(new Set())}
+              >
+                {I18n.t('Clear')}
+              </Button>
+            )}
+          </Flex>
+        </View>
+      )}
 
       {clipTags.length > 0 && (
         <View margin="small 0" data-testid="text-clips-tag-filter">
@@ -632,9 +737,11 @@ export default function TextClipsTray() {
 
       {!isLoading && !isError && !searchTooShort && clips.length === 0 && !debouncedSearch && (
         <Text>
-          {I18n.t(
-            'No clips yet — highlight text on a page in this course and click Clip to save it here.',
-          )}
+          {mode === 'global'
+            ? I18n.t('No clips yet — highlight text in any course to save it here.')
+            : I18n.t(
+                'No clips yet — highlight text on a page in this course and click Clip to save it here.',
+              )}
         </Text>
       )}
 
@@ -648,6 +755,7 @@ export default function TextClipsTray() {
                 editingId={editingId}
                 editDraft={editDraft}
                 allTags={clipTags}
+                showCourseLabel={mode === 'global'}
                 onStartEdit={startEdit}
                 onEditDraftChange={setEditDraft}
                 onToggleEditTag={toggleEditTag}

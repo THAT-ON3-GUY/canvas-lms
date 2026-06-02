@@ -28,6 +28,7 @@ module Api::V1::TextClip
   def text_clip_json(clip, user, session, opts = {})
     json = api_json(clip, user, session, opts.merge(API_JSON_OPTS))
     json["tags"] = clip.clip_tags.map { |t| { "id" => t.id, "name" => t.name, "color" => t.color } }
+    json["course"] = clip.course && { "id" => clip.course.id, "name" => clip.course.name }
     json
   end
 

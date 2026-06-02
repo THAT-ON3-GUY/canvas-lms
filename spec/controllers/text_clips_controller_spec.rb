@@ -358,4 +358,128 @@ describe TextClipsController do
       end
     end
   end
+
+  context "authenticated global routes (users/self)" do
+    before :once do
+      @main_course = @course
+      @second_course = course_factory(active_all: true)
+      teacher_in_course(course: @second_course, user: @teacher, active_all: true)
+    end
+
+    before do
+      user_session(@teacher)
+      @teacher.update_root_account_ids
+      @global_clip = TextClip.create!(
+        user: @teacher,
+        course: nil,
+        content: "Dashboard clip",
+        root_account_id: @main_course.root_account_id
+      )
+      @course_a_clip = create_clip_for(@teacher, @main_course, "Course A clip")
+      @course_b_clip = create_clip_for(@teacher, @second_course, "Course B clip")
+      @other_user_clip = create_clip_for(@student, @course, "Student only")
+    end
+
+    describe "GET #index" do
+      it "returns cross-course clips for the current user" do
+        get :index, format: :json, params: { user_id: "self" }
+        expect(response).to be_successful
+        clip_ids = json_parse(response.body).pluck("id")
+        expect(clip_ids).to include(@course_a_clip.id, @course_b_clip.id, @global_clip.id)
+        expect(clip_ids).not_to include(@other_user_clip.id)
+      end
+
+      it "includes a course stub on each clip" do
+        get :index, format: :json, params: { user_id: "self" }
+        body = json_parse(response.body).find { |c| c["id"] == @course_a_clip.id }
+        expect(body["course"]).to eq({ "id" => @main_course.id, "name" => @main_course.name })
+        global_body = json_parse(response.body).find { |c| c["id"] == @global_clip.id }
+        expect(global_body["course"]).to be_nil
+      end
+
+      it "filters by course_ids[] (OR)" do
+        get :index, format: :json, params: { user_id: "self", course_ids: [@main_course.id] }
+        clip_ids = json_parse(response.body).pluck("id")
+        expect(clip_ids).to include(@course_a_clip.id)
+        expect(clip_ids).not_to include(@course_b_clip.id)
+      end
+
+      it "filters by tag_ids[] and q" do
+        tag = ClipTag.create!(
+          user_id: @teacher.id,
+          name: "Global filter",
+          color: "blue",
+          root_account_id: @course.root_account_id
+        )
+        tagged = create_clip_for(@teacher, @second_course, "unique global phrase")
+        @second_course.shard.activate do
+          TextClipTagging.create!(
+            text_clip: tagged,
+            clip_tag: tag,
+            root_account_id: @second_course.root_account_id
+          )
+        end
+
+        get :index, format: :json, params: { user_id: "self", tag_ids: [tag.id] }
+        expect(json_parse(response.body).pluck("id")).to eq [tagged.id]
+
+        get :index, format: :json, params: { user_id: "self", q: "unique global" }
+        expect(json_parse(response.body).pluck("id")).to eq [tagged.id]
+      end
+    end
+
+    describe "POST #create" do
+      it "creates a clip with course_id nil" do
+        post :create, format: :json, params: {
+          user_id: "self",
+          content: "Off-course clip",
+          source_url: "https://example.com/dashboard"
+        }
+        expect(response).to have_http_status(:created)
+        body = json_parse(response.body)
+        clip = TextClip.find(body["id"])
+        expect(clip.user_id).to eq @teacher.id
+        expect(clip.course_id).to be_nil
+      end
+    end
+
+    describe "PUT #update" do
+      it "updates a clip from any course" do
+        put :update, format: :json, params: {
+          user_id: "self",
+          id: @course_b_clip.id,
+          note: "Cross-course note"
+        }
+        expect(response).to be_successful
+        clip = @second_course.shard.activate { @course_b_clip.reload }
+        expect(clip.note).to eql "Cross-course note"
+      end
+
+      it "returns not found for another user's clip" do
+        put :update, format: :json, params: {
+          user_id: "self",
+          id: @other_user_clip.id,
+          content: "Hacked"
+        }
+        expect(response).to have_http_status(:not_found)
+      end
+    end
+
+    describe "DELETE #destroy" do
+      it "soft-deletes the current user's clip" do
+        delete :destroy, format: :json, params: { user_id: "self", id: @course_a_clip.id }
+        expect(response).to be_successful
+        expect(@course.shard.activate { @course_a_clip.reload.workflow_state }).to eql "deleted"
+      end
+    end
+
+    describe "POST #undestroy" do
+      it "restores a soft-deleted clip" do
+        @course.shard.activate { @course_a_clip.destroy }
+        post :undestroy, format: :json, params: { user_id: "self", id: @course_a_clip.id }
+        expect(response).to be_successful
+        expect(@course.shard.activate { @course_a_clip.reload.workflow_state }).to eql "active"
+      end
+    end
+  end
 end

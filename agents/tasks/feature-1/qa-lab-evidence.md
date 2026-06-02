@@ -7,6 +7,7 @@
 | **#2** — Create TextClip Rails model | https://github.com/THAT-ON3-GUY/canvas-lms/pull/18 | `app/models/text_clip.rb`; `spec/models/text_clip_spec.rb` (validations, nullable `course_id`, soft delete, `for_user`, `for_course`) | `docker compose run --rm web bin/rspec spec/models/text_clip_spec.rb` | **6 examples, 0 failures** (also `bin/rubocop` on model + spec: no offenses) | Story 2 / Rails Backend milestone; FR-06 prep via `for_user`; partial Story 10 model specs. Merge: https://github.com/THAT-ON3-GUY/canvas-lms/commit/dbfac053a8172aa35943ce26bc6f65f824460ca4 |
 | **Lab 4.1 docs** — `agents/quality-assurance.md`, this evidence file | https://github.com/THAT-ON3-GUY/canvas-lms/commit/dbfac053a8172aa35943ce26bc6f65f824460ca4 (QA agent shipped in PR #18); evidence follow-up on `master` after merge | — | — | **No automated test** — agent markdown and evidence only; no runtime behavior to exercise. | Lab 4.1 deliverable; supports repeatable QA workflow per course spec. |
 | **#3**, **#4** — TextClipsController + API routes | https://github.com/THAT-ON3-GUY/canvas-lms/pull/19 | `app/controllers/text_clips_controller.rb`; `spec/controllers/text_clips_controller_spec.rb`; `config/routes.rb`; `User#has_many :text_clips` | `docker compose run --rm web bin/rspec spec/controllers/text_clips_controller_spec.rb` | **7 examples, 0 failures** (`bin/rubocop` on controller, spec, routes: no offenses) | Stories 3–4; partial Story 10. Merge: https://github.com/THAT-ON3-GUY/canvas-lms/commit/d8710e62e23350b0cc52e06a7b11a3c376c717f0 |
+| **Slice 5** — Global clips view | https://github.com/THAT-ON3-GUY/canvas-lms/pull/21 | Global routes + controller refactor; `TextClipsTray` global mode; `api.ts` global helpers; `SideNav` always-on bookmark; `TextClipsSelectionRoot` | `docker compose run --rm web bin/rspec spec/models/text_clip_spec.rb spec/controllers/text_clips_controller_spec.rb`; `yarn test ui/features/text_clips ui/features/navigation_header/react/trays/__tests__/TextClipsTray.test.tsx`; `yarn check:ts` | **55 RSpec examples, 0 failures**; **33 Jest tests, 0 failures**; rubocop clean on touched Ruby | Refs #5, #7, #8, #9, #16; Story 10 extended |
 
 ## Board / issue timeline (#2)
 
@@ -29,3 +30,14 @@ This cycle followed [`agents/feature-implementation.md`](../../feature-implement
 | 2026-05-19 | In progress | `add_issue_comment` on #3 and #4 (earlier in slice) |
 | 2026-05-19 | QA green (pre-merge) | https://github.com/THAT-ON3-GUY/canvas-lms/issues/3#issuecomment-4491615730 , https://github.com/THAT-ON3-GUY/canvas-lms/issues/4#issuecomment-4491615857 |
 | 2026-05-19 | Done | PR #19 squash-merged; issues **#3** and **#4** closed `completed` |
+
+## Slice 5 QA (global clips)
+
+| Command | Outcome |
+|---------|---------|
+| `docker compose run --rm web bin/rspec spec/models/text_clip_spec.rb spec/controllers/text_clips_controller_spec.rb` | **55 examples, 0 failures** |
+| `yarn test ui/features/text_clips ui/features/navigation_header/react/trays/__tests__/TextClipsTray.test.tsx` | **33 tests, 0 failures** |
+| `yarn check:ts` | pass |
+| `bin/rubocop` on `text_clip.rb`, `text_clips_controller.rb`, `lib/api/v1/text_clip.rb` | no offenses |
+
+Manual checklist: see [`.cursor/plans/text_clipper_slice_5.plan.md`](../../../.cursor/plans/text_clipper_slice_5.plan.md) § Manual verification.

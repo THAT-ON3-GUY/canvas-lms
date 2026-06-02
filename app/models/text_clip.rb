@@ -27,7 +27,11 @@ class TextClip < ApplicationRecord
   has_many :active_text_clip_taggings, -> { active }, class_name: "TextClipTagging"
   has_many :clip_tags, -> { active }, through: :active_text_clip_taggings, source: :clip_tag
 
-  resolves_root_account through: :course
+  resolves_root_account through: lambda { |clip|
+    clip.course&.root_account_id ||
+      clip.user&.root_account_ids&.first ||
+      clip.user&.associated_root_accounts&.first&.id
+  }
 
   validates :user_id, presence: true
   validates :content, presence: true, length: { maximum: 50_000 }
@@ -38,6 +42,7 @@ class TextClip < ApplicationRecord
 
   scope :for_user, ->(user) { where(user:) }
   scope :for_course, ->(course) { where(course:) }
+  scope :for_courses, ->(ids) { Array(ids).compact.blank? ? all : where(course_id: ids) }
   scope :searchable, lambda { |q|
     next all if q.blank?
 

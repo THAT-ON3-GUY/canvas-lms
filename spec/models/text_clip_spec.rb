@@ -161,6 +161,48 @@ describe TextClip do
     end
   end
 
+  describe ".for_courses" do
+    before :once do
+      @main_course_id = @course.id
+      @other_course = course_factory
+      student_in_course(course: @other_course, user: @student, active_all: true)
+      @other_course_clip = TextClip.create!(
+        user_id: @student.id,
+        course_id: @other_course.id,
+        content: "Other course clip",
+        root_account_id: @other_course.root_account_id
+      )
+    end
+
+    it "returns all clips when ids are blank" do
+      expect(TextClip.for_courses([]).order(:id)).to eq TextClip.order(:id).to_a
+    end
+
+    it "filters to the given course id" do
+      expect(TextClip.for_courses([@main_course_id]).order(:id)).to eq [@student_clip, @teacher_clip]
+    end
+
+    it "returns clips from either course (OR)" do
+      expect(TextClip.for_courses([@main_course_id, @other_course.id]).order(:id)).to include(
+        @student_clip,
+        @other_course_clip
+      )
+    end
+  end
+
+  describe "root_account resolution" do
+    it "populates root_account_id from the course when present" do
+      clip = TextClip.create!(user: @student, course: @course, content: "course clip")
+      expect(clip.root_account_id).to eq @course.root_account_id
+    end
+
+    it "populates root_account_id from the user when course is nil" do
+      @student.update_root_account_ids
+      clip = TextClip.create!(user: @student, course: nil, content: "global clip")
+      expect(clip.root_account_id).to eq @student.root_account_ids.first
+    end
+  end
+
   describe ".with_any_tag" do
     before :once do
       @tag_a = ClipTag.create!(

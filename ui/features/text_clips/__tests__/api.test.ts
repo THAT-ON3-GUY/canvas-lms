@@ -19,9 +19,11 @@
 import doFetchApiModule from '@canvas/do-fetch-api-effect'
 import {
   createClipTag,
+  createGlobalTextClip,
   createTextClip,
   deleteClipTag,
   fetchClipTags,
+  globalTextClipsIndexPath,
   textClipsIndexPath,
   undeleteTextClip,
   updateClipTag,
@@ -83,6 +85,34 @@ describe('text_clips api', () => {
     const path = textClipsIndexPath('42', {tagIds: [1, 3]})
     expect(path).toContain('tag_ids%5B%5D=1')
     expect(path).toContain('tag_ids%5B%5D=3')
+  })
+
+  it('globalTextClipsIndexPath serializes course_ids[], tag_ids[], and q', () => {
+    const path = globalTextClipsIndexPath({
+      q: 'beta',
+      tagIds: [1],
+      courseIds: [7, 9],
+    })
+    expect(path).toContain('/api/v1/users/self/text_clips')
+    expect(path).toContain('q=beta')
+    expect(path).toContain('tag_ids%5B%5D=1')
+    expect(path).toContain('course_ids%5B%5D=7')
+    expect(path).toContain('course_ids%5B%5D=9')
+  })
+
+  it('createGlobalTextClip POSTs to users/self/text_clips', async () => {
+    await createGlobalTextClip({
+      content: 'dashboard selection',
+      source_url: 'https://example.com/dashboard',
+    })
+    expect(doFetchApi).toHaveBeenCalledWith({
+      path: '/api/v1/users/self/text_clips',
+      method: 'POST',
+      body: {
+        content: 'dashboard selection',
+        source_url: 'https://example.com/dashboard',
+      },
+    })
   })
 
   it('updateTextClip PUTs tag_ids', async () => {

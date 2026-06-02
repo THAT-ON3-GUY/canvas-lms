@@ -1,5 +1,7 @@
 # QA lab evidence — Lab 4.1 (Canvas Text Clipper)
 
+**Slice 5+ narrative, dev environment, manual sign-off:** [`progress-slice-5-onward.md`](progress-slice-5-onward.md).
+
 ## Work items
 
 | Item | PR | Tests added / updated | Command | Outcome | Trace |
@@ -61,3 +63,23 @@ Manual checklist: [`.cursor/plans/text_clipper_slice_6_31ac498c.plan.md`](../../
 | When (UTC) | Status | Method |
 |------------|--------|--------|
 | 2026-06-02 | Done | PR #22 squash-merged to `master` |
+
+### Manual verification (Slice 6) — signed off
+
+| Step | Expected | Result (2026-06-02) |
+|------|----------|---------------------|
+| Create link from tray | URL `/text_clips/shared/<token>`, copy works | **Pass** (developer) |
+| Open link logged out | Content + source + course + date; no note/tags/edit | **Pass** |
+| Stop sharing + reload | 404 | **Pass** |
+
+Recorded in [`progress-slice-5-onward.md`](progress-slice-5-onward.md). API-only verification was also run earlier via `curl` / Rails runner during agent session.
+
+## Slice 5+ dev UI QA (nav visibility)
+
+| Check | Result (2026-06-02) |
+|-------|---------------------|
+| Text clips entry in left global nav | **Pass** after classic ERB item + `OldSideNav` wiring + `docker compose up -d` + Redis cache clear + webpack |
+| Tray opens from nav click | **Pass** |
+| Share flow still works end-to-end | **Pass** (same session as Slice 6 manual checklist) |
+
+Follow-up: commit nav files listed in [`progress-slice-5-onward.md`](progress-slice-5-onward.md) § Follow-up work.

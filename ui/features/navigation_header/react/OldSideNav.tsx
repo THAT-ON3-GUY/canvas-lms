@@ -40,6 +40,7 @@ const GroupsTray = React.lazy(() => import('./trays/GroupsTray'))
 const AccountsTray = React.lazy(() => import('./trays/AccountsTray'))
 const ProfileTray = React.lazy(() => import('./trays/ProfileTray'))
 const HistoryTray = React.lazy(() => import('./trays/HistoryTray'))
+const TextClipsTray = React.lazy(() => import('./trays/TextClipsTray'))
 const HelpTray = React.lazy(() => import('./trays/HelpTray'))
 
 const accountsNavLink = document.querySelector(`#global_nav_accounts_link`)
@@ -61,10 +62,19 @@ type ActiveItem =
   | 'groups'
   | 'profile'
   | 'history'
+  | 'text_clips'
   | 'help'
   | null
 
-const itemsWithResources = ['courses', 'groups', 'accounts', 'profile', 'history', 'help'] as const
+const itemsWithResources = [
+  'courses',
+  'groups',
+  'accounts',
+  'profile',
+  'history',
+  'text_clips',
+  'help',
+] as const
 
 function noop() {}
 
@@ -234,6 +244,7 @@ const Navigation = () => {
               {type === 'accounts' && <AccountsTray />}
               {type === 'profile' && <ProfileTray />}
               {type === 'history' && <HistoryTray />}
+              {type === 'text_clips' && <TextClipsTray />}
               {type === 'help' && <HelpTray closeTray={closeTray} />}
             </React.Suspense>
           </div>

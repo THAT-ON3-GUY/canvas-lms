@@ -8,6 +8,7 @@
 | **Lab 4.1 docs** — `agents/quality-assurance.md`, this evidence file | https://github.com/THAT-ON3-GUY/canvas-lms/commit/dbfac053a8172aa35943ce26bc6f65f824460ca4 (QA agent shipped in PR #18); evidence follow-up on `master` after merge | — | — | **No automated test** — agent markdown and evidence only; no runtime behavior to exercise. | Lab 4.1 deliverable; supports repeatable QA workflow per course spec. |
 | **#3**, **#4** — TextClipsController + API routes | https://github.com/THAT-ON3-GUY/canvas-lms/pull/19 | `app/controllers/text_clips_controller.rb`; `spec/controllers/text_clips_controller_spec.rb`; `config/routes.rb`; `User#has_many :text_clips` | `docker compose run --rm web bin/rspec spec/controllers/text_clips_controller_spec.rb` | **7 examples, 0 failures** (`bin/rubocop` on controller, spec, routes: no offenses) | Stories 3–4; partial Story 10. Merge: https://github.com/THAT-ON3-GUY/canvas-lms/commit/d8710e62e23350b0cc52e06a7b11a3c376c717f0 |
 | **Slice 5** — Global clips view | https://github.com/THAT-ON3-GUY/canvas-lms/pull/21 | Global routes + controller refactor; `TextClipsTray` global mode; `api.ts` global helpers; `SideNav` always-on bookmark; `TextClipsSelectionRoot` | `docker compose run --rm web bin/rspec spec/models/text_clip_spec.rb spec/controllers/text_clips_controller_spec.rb`; `yarn test ui/features/text_clips ui/features/navigation_header/react/trays/__tests__/TextClipsTray.test.tsx`; `yarn check:ts` | **55 RSpec examples, 0 failures**; **33 Jest tests, 0 failures**; rubocop clean on touched Ruby | Merge: https://github.com/THAT-ON3-GUY/canvas-lms/commit/97c58ae454466df8fc5fda4943e9f7a9df73a563 |
+| **Slice 6** — Read-only share links | https://github.com/THAT-ON3-GUY/canvas-lms/pull/22 | `text_clip_shares` migration/model; `share`/`unshare` + `SharedTextClipsController`; tray share UI; API helpers | `docker compose run --rm web bin/rspec spec/models/text_clip_share_spec.rb spec/controllers/text_clips_controller_spec.rb spec/controllers/shared_text_clips_controller_spec.rb`; `yarn test ui/features/text_clips ui/features/navigation_header/react/trays/__tests__/TextClipsTray.test.tsx`; `yarn check:ts` | **44 RSpec examples, 0 failures**; **39 Jest tests, 0 failures**; rubocop clean on touched Ruby | Merge: https://github.com/THAT-ON3-GUY/canvas-lms/commit/b9dfadfcbad4521e902ffb387825ab205d9aeeec |
 
 ## Board / issue timeline (#2)
 
@@ -45,3 +46,18 @@ Manual checklist: see [`.cursor/plans/text_clipper_slice_5.plan.md`](../../../.c
 | When (UTC) | Status | Method |
 |------------|--------|--------|
 | 2026-06-02 | Done | PR #21 squash-merged to `master` |
+
+## Slice 6 QA (read-only share links)
+
+| Command | Outcome |
+|---------|---------|
+| `docker compose run --rm web bin/rspec spec/models/text_clip_share_spec.rb spec/controllers/text_clips_controller_spec.rb spec/controllers/shared_text_clips_controller_spec.rb` | **44 examples, 0 failures** |
+| `yarn test ui/features/text_clips ui/features/navigation_header/react/trays/__tests__/TextClipsTray.test.tsx` | **39 tests, 0 failures** |
+| `yarn check:ts` | pass |
+| `bin/rubocop` on `text_clip_share.rb`, `text_clips_controller.rb`, `shared_text_clips_controller.rb`, `lib/api/v1/text_clip.rb` | no offenses |
+
+Manual checklist: [`.cursor/plans/text_clipper_slice_6_31ac498c.plan.md`](../../../.cursor/plans/text_clipper_slice_6_31ac498c.plan.md) § Verification (logged-out shared link, revoke → 404).
+
+| When (UTC) | Status | Method |
+|------------|--------|--------|
+| 2026-06-02 | Done | PR #22 squash-merged to `master` |

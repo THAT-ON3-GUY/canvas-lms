@@ -7,6 +7,7 @@
 | https://github.com/THAT-ON3-GUY/canvas-lms/pull/17 | Adds `text_clips` predeploy migrations (`CreateTextClips`, `SetReplicaIdentityOnTextClips`), `agents/feature-implementation.md`, and canonical `agents/tasks/feature-1/{implementation-research,feature-1}.md`. (This evidence file landed on `master` in a follow-up commit: https://github.com/THAT-ON3-GUY/canvas-lms/commit/f9c6e7a9249ac82206b44579131253a5236e81b8.) |
 | https://github.com/THAT-ON3-GUY/canvas-lms/pull/19 | **Stories 3–4:** `TextClipsController` (`index`, `create`, `destroy`), course-nested API routes under `/api/v1/courses/:course_id/text_clips`, `has_many :text_clips` on `User`; partial Story 10 controller specs. |
 | https://github.com/THAT-ON3-GUY/canvas-lms/pull/21 | **Slice 5 — Global clips view:** `/api/v1/users/self/text_clips`, global SideNav + tray mode, off-course selection clip (`course_id: nil`), layout bundle for all logged-in pages, `for_courses` scope, course stub in JSON. Refs #5, #7, #8, #9, #16; more Story 10 coverage. |
+| https://github.com/THAT-ON3-GUY/canvas-lms/pull/22 | **Slice 6 — Read-only share links:** `text_clip_shares`, owner `POST/DELETE .../share`, anonymous `GET /text_clips/shared/:token`, tray share UI (create/copy/revoke). Refs #5, #7, #10, #11. |
 
 ## Board: item titles and status timeline
 
@@ -75,3 +76,32 @@ Delivers **Story 3** (controller CRUD + auth/scoping) and **Story 4** (course-ne
 ### Trace
 
 Exposes nullable `course_id` from Story 1 as a **personal cross-course collection** per [`.cursor/plans/text_clipper_slice_5.plan.md`](../../../.cursor/plans/text_clipper_slice_5.plan.md); updates FR-04/FR-05 behavior (tray stays open across navigation via global session key).
+
+## Slice 6 — Read-only share links
+
+### Scope delivered
+
+- **Data:** `text_clip_shares` (token, soft-delete, one active share per clip); `TextClipShare` + `TextClip#active_share`.
+- **API:** `POST/DELETE .../text_clips/:id/share` (course + `users/self`); owner JSON includes `share: {token, url}`.
+- **Public:** `GET /text_clips/shared/:token` (no login); HTML + JSON omit `note`, tags, `user_id`.
+- **UI:** Tray per-clip share panel (create link, copy, stop sharing, shared badge) in course and global modes.
+
+### Merge evidence
+
+- **Merged PR:** https://github.com/THAT-ON3-GUY/canvas-lms/pull/22  
+- **Merge commit on `master`:** `b9dfadfcbad4521e902ffb387825ab205d9aeeec` (https://github.com/THAT-ON3-GUY/canvas-lms/commit/b9dfadfcbad4521e902ffb387825ab205d9aeeec)
+
+### Board / issues
+
+| Item | Notes |
+|------|--------|
+| **#5** TextClipsTray | Share panel, copy, revoke, shared badge |
+| **#7** API helper | `shareTextClip`, `unshareTextClip`, global variants |
+| **#10** RSpec | `text_clip_share_spec`, share/unshare + `shared_text_clips` controller specs |
+| **#11** Jest | Tray share tests + `api.test.ts` share paths |
+
+**Projects board:** Manual alignment if MCP `projectV2` unavailable.
+
+### Trace
+
+First outward-facing clip capability per [`.cursor/plans/text_clipper_slice_6_31ac498c.plan.md`](../../../.cursor/plans/text_clipper_slice_6_31ac498c.plan.md); Eportfolio-style secret token, revocable per clip.

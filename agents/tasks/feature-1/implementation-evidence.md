@@ -6,7 +6,7 @@
 |----|-------------|
 | https://github.com/THAT-ON3-GUY/canvas-lms/pull/17 | Adds `text_clips` predeploy migrations (`CreateTextClips`, `SetReplicaIdentityOnTextClips`), `agents/feature-implementation.md`, and canonical `agents/tasks/feature-1/{implementation-research,feature-1}.md`. (This evidence file landed on `master` in a follow-up commit: https://github.com/THAT-ON3-GUY/canvas-lms/commit/f9c6e7a9249ac82206b44579131253a5236e81b8.) |
 | https://github.com/THAT-ON3-GUY/canvas-lms/pull/19 | **Stories 3–4:** `TextClipsController` (`index`, `create`, `destroy`), course-nested API routes under `/api/v1/courses/:course_id/text_clips`, `has_many :text_clips` on `User`; partial Story 10 controller specs. |
-| *(pending merge)* — branch `feature/text-clipper-slice-5-global-clips` | **Slice 5 — Global clips view:** `/api/v1/users/self/text_clips`, global SideNav + tray mode, off-course selection clip (`course_id: nil`), layout bundle for all logged-in pages, `for_courses` scope, course stub in JSON. Refs #5, #7, #8, #9, #16; more Story 10 coverage. |
+| https://github.com/THAT-ON3-GUY/canvas-lms/pull/21 | **Slice 5 — Global clips view:** `/api/v1/users/self/text_clips`, global SideNav + tray mode, off-course selection clip (`course_id: nil`), layout bundle for all logged-in pages, `for_courses` scope, course stub in JSON. Refs #5, #7, #8, #9, #16; more Story 10 coverage. |
 
 ## Board: item titles and status timeline
 
@@ -53,6 +53,11 @@ Delivers **Story 3** (controller CRUD + auth/scoping) and **Story 4** (course-ne
 - **API:** `GET/POST/PUT/DELETE` + `undestroy` under `/api/v1/users/:user_id/text_clips`; `course_ids[]` filter on global index; `course` stub on clip JSON.
 - **UI:** SideNav bookmark on every page; tray `course` vs `global` mode; course chip filter + per-clip course labels in global mode; selection overlay saves via global POST when `ENV.COURSE_ID` is absent.
 - **Cross-cutting:** `js_bundle(:text_clips)` for any `@current_user`; `TextClip#resolves_root_account` user fallback; `scope :for_courses`.
+
+### Merge evidence
+
+- **PR:** https://github.com/THAT-ON3-GUY/canvas-lms/pull/21  
+- **Branch:** `feature/text-clipper-slice-5-global-clips` (commit `c1cde01ca41`)
 
 ### Board / issues (expected on merge)
 

@@ -56,10 +56,10 @@ Delivers **Story 3** (controller CRUD + auth/scoping) and **Story 4** (course-ne
 
 ### Merge evidence
 
-- **PR:** https://github.com/THAT-ON3-GUY/canvas-lms/pull/21  
-- **Branch:** `feature/text-clipper-slice-5-global-clips` (commit `c1cde01ca41`)
+- **Merged PR:** https://github.com/THAT-ON3-GUY/canvas-lms/pull/21  
+- **Merge commit on `master`:** `97c58ae454466df8fc5fda4943e9f7a9df73a563` (https://github.com/THAT-ON3-GUY/canvas-lms/commit/97c58ae454466df8fc5fda4943e9f7a9df73a563)
 
-### Board / issues (expected on merge)
+### Board / issues
 
 | Item | Notes |
 |------|--------|

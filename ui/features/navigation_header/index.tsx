@@ -76,16 +76,19 @@ if (window.ENV.FEATURES.instui_nav || localStorage.instui_nav_dev) {
 ready(() => {
   const showInstUiNavbar = window.ENV.FEATURES.instui_nav || localStorage.instui_nav_dev
   if (showInstUiNavbar) {
-    const mobileContextNavContainer = document.getElementById('mobileContextNavContainer')
-    if (mobileContextNavContainer) {
+    const header = document.getElementById('header')
+    if (header) {
+      header.innerHTML = ''
       render(
         <QueryClientProvider client={queryClient}>
           <SideNav externalTools={getExternalTools()} />
         </QueryClientProvider>,
-        mobileContextNavContainer,
+        header,
       )
+    }
 
-      // Render MobileNavigation after SideNav
+    const mobileContextNavContainer = document.getElementById('mobileContextNavContainer')
+    if (mobileContextNavContainer) {
       render(
         <QueryClientProvider client={queryClient}>
           <AlertManager>

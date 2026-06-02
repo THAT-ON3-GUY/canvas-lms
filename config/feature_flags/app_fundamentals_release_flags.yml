@@ -31,6 +31,9 @@ instui_nav:
   applies_to: RootAccount
   display_name: New InstUI navbar
   description: This is a new navbar being implemented with react router in mind
+  environments:
+    development:
+      state: allowed_on
 password_complexity:
   state: hidden
   applies_to: RootAccount

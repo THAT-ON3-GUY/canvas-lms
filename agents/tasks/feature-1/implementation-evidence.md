@@ -1,5 +1,7 @@
 # Implementation evidence — Lab 3.2 (Canvas Text Clipper)
 
+**Narrative progress (Slice 5 onward, dev setup, manual QA):** [`progress-slice-5-onward.md`](progress-slice-5-onward.md) — use that file as the main Cursor reference on another machine.
+
 ## PR links
 
 | PR | Description |
@@ -105,3 +107,50 @@ Exposes nullable `course_id` from Story 1 as a **personal cross-course collectio
 ### Trace
 
 First outward-facing clip capability per [`.cursor/plans/text_clipper_slice_6_31ac498c.plan.md`](../../../.cursor/plans/text_clipper_slice_6_31ac498c.plan.md); Eportfolio-style secret token, revocable per clip.
+
+### Manual verification (Slice 6)
+
+| Check | Result | When |
+|-------|--------|------|
+| Create share link from tray; copy URL | Pass | 2026-06-02 |
+| Incognito / logged-out shared page (public fields only) | Pass | 2026-06-02 |
+| Stop sharing → reload shared URL → 404 | Pass | 2026-06-02 |
+
+Details and step-by-step checklist: [`progress-slice-5-onward.md`](progress-slice-5-onward.md) § Slice 6 manual verification.
+
+## Post-merge dev session (2026-06-02) — nav + Docker
+
+Not merged to `master` as of last evidence update; tracked for the next PR.
+
+### Problem
+
+`instui_nav` enabled in DB but browser often showed **classic** left nav (Account, Dashboard, Courses, …) with **no** Text clips entry. InstUI `SideNav` only mounts when `ENV.FEATURES.instui_nav` is true **and** `navigation_header` webpack bundles load.
+
+### Root causes found
+
+1. **`webpack` container exited** after initial compile when `docker compose up` ran in the foreground (terminal killed → services stopped).
+2. **Stale Redis** `rails80:js_env_account_features/*` cached `instui_nav: false` in page ENV.
+3. **Classic ERB nav** had no Text clips row; tray wiring lived only in InstUI `SideNav` / `OldSideNav` click handlers.
+
+### Fixes applied locally
+
+| File | Purpose |
+|------|---------|
+| `app/views/shared/_new_nav_header.html.erb` | Server-rendered “Text clips” above Help |
+| `ui/features/navigation_header/react/OldSideNav.tsx` | Open `TextClipsTray` from `#global_nav_text_clips_link` |
+| `ui/features/navigation_header/index.tsx` | Mount InstUI `SideNav` into `#header` when `instui_nav` |
+| `ui/features/navigation_header/react/utils.ts` | Tray label for `text_clips` |
+| `app/stylesheets/base/_SideNav.scss` | `#text-clips-tray` styles |
+| `config/feature_flags/app_fundamentals_release_flags.yml` | `instui_nav` allowed in development |
+
+### Ops that restored a working dev UI
+
+```bash
+docker compose up -d
+docker compose exec -T redis redis-cli --scan --pattern 'rails80:js_env_account_features*' | xargs -r docker compose exec -T redis redis-cli DEL
+docker compose up -d webpack
+docker compose restart web
+# browser: hard refresh http://localhost:3000
+```
+
+**Verified:** Text clips visible in left nav; Slice 6 share manual checklist passed. Full write-up: [`progress-slice-5-onward.md`](progress-slice-5-onward.md).

@@ -223,6 +223,18 @@
       <% unless @current_user.nil? %>
         <%= render(partial: 'external_tools/global_nav_menu_items') %>
       <% end %>
+      <% if @current_user %>
+        <li class="menu-item ic-app-header__menu-list-item">
+          <a id="global_nav_text_clips_link" role="button" href="#" class="ic-app-header__menu-list-link">
+            <div class="menu-item-icon-container" aria-hidden="true">
+              <%= render(partial: "shared/svg/svg_icon_folder", formats: [:svg]) %>
+            </div>
+            <div class="menu-item__text">
+              <%= t('Text clips', :scope => :text_clips) %>
+            </div>
+          </a>
+        </li>
+      <% end %>
       <li class="ic-app-header__menu-list-item">
         <%= link_to "#",  # gets overridden by JS to this anyway, and also there is a click action to slide out the help tray
                     :id => 'global_nav_help_link',

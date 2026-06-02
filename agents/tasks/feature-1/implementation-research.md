@@ -1,5 +1,7 @@
 # Implementation Research — Canvas Text Clipper
 
+**Progress from Slice 5 onward (merged PRs, manual QA, dev environment):** [`progress-slice-5-onward.md`](progress-slice-5-onward.md).
+
 ## Feature Summary
 
 The Text Clipper lets students highlight and save text from any Canvas page into a persistent tray panel. Clips are scoped to the current user and course, with the data model designed to support global (course-agnostic) clips in the future. See `agents/tasks/feature-1/feature-1.md` for the full problem statement and pitch.

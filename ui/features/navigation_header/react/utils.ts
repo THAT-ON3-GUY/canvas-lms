@@ -104,6 +104,7 @@ export function getTrayLabel(type: string | null) {
     case 'history':
       return I18n.t('Recent History tray')
     case 'textClips':
+    case 'text_clips':
       return I18n.t('Text clips tray')
     default:
       return I18n.t('Global navigation tray')

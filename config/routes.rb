@@ -675,6 +675,8 @@ CanvasRails::Application.routes.draw do
     concerns :files
   end
 
+  get "text_clips/shared/:token" => "shared_text_clips#show", :as => :shared_text_clip
+
   resources :eportfolios, except: :index do
     post :reorder_categories
     post ":eportfolio_category_id/reorder_entries" => "eportfolios#reorder_entries", :as => :reorder_entries
@@ -2891,6 +2893,8 @@ CanvasRails::Application.routes.draw do
       put "courses/:course_id/text_clips/:id", action: :update
       delete "courses/:course_id/text_clips/:id", action: :destroy
       post "courses/:course_id/text_clips/:id/undestroy", action: :undestroy, as: :undestroy_course_text_clip
+      post "courses/:course_id/text_clips/:id/share", action: :share, as: :share_course_text_clip
+      delete "courses/:course_id/text_clips/:id/share", action: :unshare, as: :unshare_course_text_clip
     end
 
     scope(controller: :text_clips) do
@@ -2899,6 +2903,8 @@ CanvasRails::Application.routes.draw do
       put "users/:user_id/text_clips/:id", action: :update
       delete "users/:user_id/text_clips/:id", action: :destroy
       post "users/:user_id/text_clips/:id/undestroy", action: :undestroy, as: :undestroy_user_text_clip
+      post "users/:user_id/text_clips/:id/share", action: :share, as: :share_user_text_clip
+      delete "users/:user_id/text_clips/:id/share", action: :unshare, as: :unshare_user_text_clip
     end
 
     scope(controller: :clip_tags) do

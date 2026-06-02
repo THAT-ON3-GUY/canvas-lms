@@ -20,6 +20,7 @@
 
 module Api::V1::TextClip
   include Api::V1::Json
+  include Api::V1::TextClipShare
 
   API_JSON_OPTS = {
     only: %w[id content source_url source_title note user_id course_id workflow_state created_at updated_at]
@@ -29,7 +30,19 @@ module Api::V1::TextClip
     json = api_json(clip, user, session, opts.merge(API_JSON_OPTS))
     json["tags"] = clip.clip_tags.map { |t| { "id" => t.id, "name" => t.name, "color" => t.color } }
     json["course"] = clip.course && { "id" => clip.course.id, "name" => clip.course.name }
+    share = clip.active_share
+    json["share"] = share ? text_clip_share_json(share, host: opts[:host]) : nil
     json
+  end
+
+  def shared_text_clip_public_json(clip)
+    {
+      "content" => clip.content,
+      "source_url" => clip.source_url,
+      "source_title" => clip.source_title,
+      "course" => clip.course && { "name" => clip.course.name },
+      "created_at" => clip.created_at
+    }
   end
 
   def text_clips_json(clips, user, session, opts = {})

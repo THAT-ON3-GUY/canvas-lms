@@ -482,4 +482,53 @@ describe TextClipsController do
       end
     end
   end
+
+  context "share and unshare" do
+    before do
+      user_session(@teacher)
+      @teacher_clip = create_clip_for(@teacher, @course, "Share target")
+      @student_clip = create_clip_for(@student, @course, "Student clip")
+    end
+
+    describe "POST #share" do
+      it "creates a share link for the owner's clip" do
+        post :share, format: :json, params: { course_id: @course.id, id: @teacher_clip.id }
+        expect(response).to be_successful
+        body = json_parse(response.body)
+        expect(body["token"]).to be_present
+        expect(body["url"]).to include(body["token"])
+        share = @course.shard.activate { @teacher_clip.reload.active_share }
+        expect(share).to be_present
+      end
+
+      it "returns the same token when share is requested again" do
+        post :share, format: :json, params: { course_id: @course.id, id: @teacher_clip.id }
+        first_token = json_parse(response.body)["token"]
+        post :share, format: :json, params: { course_id: @course.id, id: @teacher_clip.id }
+        expect(json_parse(response.body)["token"]).to eql first_token
+      end
+
+      it "returns not found for another user's clip" do
+        post :share, format: :json, params: { course_id: @course.id, id: @student_clip.id }
+        expect(response).to have_http_status(:not_found)
+      end
+    end
+
+    describe "DELETE #unshare" do
+      it "revokes the active share link" do
+        post :share, format: :json, params: { course_id: @course.id, id: @teacher_clip.id }
+        delete :unshare, format: :json, params: { course_id: @course.id, id: @teacher_clip.id }
+        expect(response).to be_successful
+        expect(@course.shard.activate { @teacher_clip.reload.active_share }).to be_nil
+      end
+    end
+
+    describe "POST #share on global routes" do
+      it "creates a share link via users/self" do
+        post :share, format: :json, params: { user_id: "self", id: @teacher_clip.id }
+        expect(response).to be_successful
+        expect(json_parse(response.body)["token"]).to be_present
+      end
+    end
+  end
 end

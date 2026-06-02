@@ -21,7 +21,13 @@ import {Alert} from '@instructure/ui-alerts'
 import {Button, IconButton} from '@instructure/ui-buttons'
 import {Flex} from '@instructure/ui-flex'
 import {Heading} from '@instructure/ui-heading'
-import {IconEditLine, IconExternalLinkLine, IconTrashLine} from '@instructure/ui-icons'
+import {
+  IconCopyLine,
+  IconEditLine,
+  IconExternalLinkLine,
+  IconLinkLine,
+  IconTrashLine,
+} from '@instructure/ui-icons'
 import {Link} from '@instructure/ui-link'
 import {List} from '@instructure/ui-list'
 import {showFlashAlert} from '@instructure/platform-alerts'
@@ -41,9 +47,13 @@ import {
   fetchClipTags,
   fetchTextClipsPage,
   globalTextClipsIndexPath,
+  shareGlobalTextClip,
+  shareTextClip,
   textClipsIndexPath,
   undeleteGlobalTextClip,
   undeleteTextClip,
+  unshareGlobalTextClip,
+  unshareTextClip,
   updateClipTag,
   updateGlobalTextClip,
   updateTextClip,
@@ -123,8 +133,14 @@ type TextClipListItemProps = {
   onSaveEdit: (id: number | string, body: TextClipUpdate) => void
   onDelete: (clip: TextClipRecord) => void
   onToggleEditTag: (tagId: number | string) => void
+  sharePanelOpen: boolean
+  onToggleSharePanel: () => void
+  onCreateShare: () => void
+  onRevokeShare: () => void
+  onCopyShareLink: (url: string) => void
   isSaving: boolean
   isDeleting: boolean
+  isSharing: boolean
 }
 
 function TextClipListItem({
@@ -139,8 +155,14 @@ function TextClipListItem({
   onSaveEdit,
   onDelete,
   onToggleEditTag,
+  sharePanelOpen,
+  onToggleSharePanel,
+  onCreateShare,
+  onRevokeShare,
+  onCopyShareLink,
   isSaving,
   isDeleting,
+  isSharing,
 }: TextClipListItemProps) {
   const isEditing = editingId === clip.id
 
@@ -241,6 +263,15 @@ function TextClipListItem({
                 {clip.course.name}
               </Text>
             )}
+            {clip.share && (
+              <View margin="xx-small 0 0 0">
+                <Tag
+                  text={I18n.t('Shared')}
+                  margin="0"
+                  data-testid={`text-clip-shared-badge-${clip.id}`}
+                />
+              </View>
+            )}
             <View margin="xx-small 0 0 0">
               {clip.source_url && (
                 <Link
@@ -255,6 +286,15 @@ function TextClipListItem({
                   <IconExternalLinkLine size="x-small" style={{paddingLeft: '0.3em'}} />
                 </Link>
               )}
+              <IconButton
+                size="small"
+                margin="0 x-small 0 0"
+                screenReaderLabel={I18n.t('Share clip')}
+                renderIcon={IconLinkLine}
+                data-testid={`text-clip-share-${clip.id}`}
+                onClick={onToggleSharePanel}
+                interaction={isDeleting || isSharing ? 'disabled' : 'enabled'}
+              />
               <IconButton
                 size="small"
                 margin="0 x-small 0 0"
@@ -273,6 +313,54 @@ function TextClipListItem({
                 interaction={isDeleting ? 'disabled' : 'enabled'}
               />
             </View>
+            {sharePanelOpen && (
+              <View
+                margin="x-small 0 0 0"
+                padding="small"
+                borderWidth="small"
+                data-testid={`text-clip-share-panel-${clip.id}`}
+              >
+                {clip.share ? (
+                  <>
+                    <TextInput
+                      renderLabel={I18n.t('Share link')}
+                      value={clip.share.url}
+                      readOnly={true}
+                      data-testid={`text-clip-share-url-${clip.id}`}
+                    />
+                    <Flex margin="x-small 0 0 0">
+                      <Button
+                        size="small"
+                        margin="0 x-small 0 0"
+                        renderIcon={<IconCopyLine />}
+                        data-testid={`text-clip-copy-link-${clip.id}`}
+                        onClick={() => onCopyShareLink(clip.share!.url)}
+                      >
+                        {I18n.t('Copy link')}
+                      </Button>
+                      <Button
+                        size="small"
+                        color="danger"
+                        data-testid={`text-clip-stop-sharing-${clip.id}`}
+                        onClick={onRevokeShare}
+                        interaction={isSharing ? 'disabled' : 'enabled'}
+                      >
+                        {I18n.t('Stop sharing')}
+                      </Button>
+                    </Flex>
+                  </>
+                ) : (
+                  <Button
+                    size="small"
+                    data-testid={`text-clip-create-link-${clip.id}`}
+                    onClick={onCreateShare}
+                    interaction={isSharing ? 'disabled' : 'enabled'}
+                  >
+                    {I18n.t('Create link')}
+                  </Button>
+                )}
+              </View>
+            )}
           </>
         )}
       </View>
@@ -296,6 +384,7 @@ export default function TextClipsTray() {
   const [pendingUndo, setPendingUndo] = useState<PendingUndo | null>(null)
   const [renamingTagId, setRenamingTagId] = useState<number | string | null>(null)
   const [renameDraft, setRenameDraft] = useState('')
+  const [sharePanelClipId, setSharePanelClipId] = useState<number | string | null>(null)
 
   useEffect(() => {
     const handle = window.setTimeout(() => {
@@ -498,10 +587,40 @@ export default function TextClipsTray() {
       })
       setEditingId(null)
       setEditDraft(null)
+      setSharePanelClipId(null)
       invalidateClips()
       showFlashAlert({message: I18n.t('Clip deleted'), type: 'success'})
     },
   })
+
+  const shareMutation = useMutation({
+    mutationFn: (id: number | string) =>
+      mode === 'course' ? shareTextClip(courseId as string | number, id) : shareGlobalTextClip(id),
+    onSuccess: () => {
+      invalidateClips()
+      showFlashAlert({message: I18n.t('Share link created'), type: 'success'})
+    },
+  })
+
+  const unshareMutation = useMutation({
+    mutationFn: (id: number | string) =>
+      mode === 'course'
+        ? unshareTextClip(courseId as string | number, id)
+        : unshareGlobalTextClip(id),
+    onSuccess: () => {
+      invalidateClips()
+      showFlashAlert({message: I18n.t('Sharing stopped'), type: 'success'})
+    },
+  })
+
+  const copyShareLink = useCallback(async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url)
+      showFlashAlert({message: I18n.t('Link copied'), type: 'success'})
+    } catch (_e) {
+      showFlashAlert({message: I18n.t('Could not copy link'), type: 'error'})
+    }
+  }, [])
 
   const startEdit = (clip: TextClipRecord) => {
     setEditingId(clip.id)
@@ -765,8 +884,16 @@ export default function TextClipsTray() {
                 }}
                 onSaveEdit={(id, body) => updateMutation.mutate({id, body})}
                 onDelete={clipToDelete => deleteMutation.mutate(clipToDelete.id)}
+                sharePanelOpen={sharePanelClipId === clip.id}
+                onToggleSharePanel={() =>
+                  setSharePanelClipId(prev => (prev === clip.id ? null : clip.id))
+                }
+                onCreateShare={() => shareMutation.mutate(clip.id)}
+                onRevokeShare={() => unshareMutation.mutate(clip.id)}
+                onCopyShareLink={copyShareLink}
                 isSaving={updateMutation.isPending}
                 isDeleting={deleteMutation.isPending}
+                isSharing={shareMutation.isPending || unshareMutation.isPending}
               />
             ))}
           </List>

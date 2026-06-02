@@ -26,6 +26,12 @@ class TextClip < ApplicationRecord
   has_many :text_clip_taggings, dependent: :destroy
   has_many :active_text_clip_taggings, -> { active }, class_name: "TextClipTagging"
   has_many :clip_tags, -> { active }, through: :active_text_clip_taggings, source: :clip_tag
+  has_many :text_clip_shares, dependent: :destroy
+  has_one :active_text_clip_share, -> { active }, class_name: "TextClipShare"
+
+  def active_share
+    active_text_clip_share
+  end
 
   resolves_root_account through: lambda { |clip|
     clip.course&.root_account_id ||

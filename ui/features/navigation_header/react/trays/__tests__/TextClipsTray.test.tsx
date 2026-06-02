@@ -110,7 +110,9 @@ describe('TextClipsTray', () => {
       </MockedQueryProvider>,
     )
     await waitFor(() => expect(screen.getByText(/alpha/)).toBeInTheDocument())
-    expect(screen.getByTestId('text-clip-source-1')).toHaveTextContent('Week 1 Page')
+    await waitFor(() =>
+      expect(screen.getByTestId('text-clip-source-1')).toHaveTextContent('Week 1 Page'),
+    )
     await user.click(screen.getByTestId('text-clip-delete-1'))
     await waitFor(() => expect(screen.getByText(/No clips yet/i)).toBeInTheDocument())
   })
@@ -503,5 +505,77 @@ describe('TextClipsTray', () => {
     await waitFor(() => expect(screen.getByText(/alpha/)).toBeInTheDocument())
     expect(screen.queryByTestId('text-clips-course-filter')).not.toBeInTheDocument()
     expect(screen.queryByTestId('text-clip-course-1')).not.toBeInTheDocument()
+  })
+
+  it('creates a share link and shows copy controls', async () => {
+    window.ENV.COURSE_ID = '30'
+    const user = userEvent.setup()
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    const clipboardStub = vi.spyOn(navigator.clipboard, 'writeText').mockImplementation(writeText)
+    let clips = [{...baseClip, share: null as {token: string; url: string} | null}]
+    server.use(
+      http.get('*/api/v1/users/self/clip_tags', () => HttpResponse.json([])),
+      http.get('*/api/v1/courses/30/text_clips', () => HttpResponse.json(clips)),
+      http.post('*/api/v1/courses/30/text_clips/1/share', () => {
+        clips = [
+          {
+            ...baseClip,
+            share: {
+              token: 'secret-token',
+              url: 'https://example.com/text_clips/shared/secret-token',
+            },
+          },
+        ]
+        return HttpResponse.json(clips[0].share, {status: 200})
+      }),
+    )
+    render(
+      <MockedQueryProvider>
+        <TextClipsTray />
+      </MockedQueryProvider>,
+    )
+    await waitFor(() => expect(screen.getByText(/alpha/)).toBeInTheDocument())
+    await user.click(screen.getByTestId('text-clip-share-1'))
+    await user.click(screen.getByTestId('text-clip-create-link-1'))
+    await waitFor(() =>
+      expect(screen.getByTestId('text-clip-share-url-1')).toHaveValue(
+        'https://example.com/text_clips/shared/secret-token',
+      ),
+    )
+    await user.click(screen.getByTestId('text-clip-copy-link-1'))
+    await waitFor(() =>
+      expect(writeText).toHaveBeenCalledWith('https://example.com/text_clips/shared/secret-token'),
+    )
+    clipboardStub.mockRestore()
+  })
+
+  it('stops sharing and hides the shared badge', async () => {
+    window.ENV.COURSE_ID = '31'
+    const user = userEvent.setup()
+    let clips: TextClipRecord[] = [
+      {
+        ...baseClip,
+        share: {token: 't1', url: 'https://example.com/text_clips/shared/t1'},
+      },
+    ]
+    server.use(
+      http.get('*/api/v1/users/self/clip_tags', () => HttpResponse.json([])),
+      http.get('*/api/v1/courses/31/text_clips', () => HttpResponse.json(clips)),
+      http.delete('*/api/v1/courses/31/text_clips/1/share', () => {
+        clips = [{...baseClip, share: null}]
+        return HttpResponse.json({revoked: true})
+      }),
+    )
+    render(
+      <MockedQueryProvider>
+        <TextClipsTray />
+      </MockedQueryProvider>,
+    )
+    await waitFor(() => expect(screen.getByTestId('text-clip-shared-badge-1')).toBeInTheDocument())
+    await user.click(screen.getByTestId('text-clip-share-1'))
+    await user.click(screen.getByTestId('text-clip-stop-sharing-1'))
+    await waitFor(() =>
+      expect(screen.queryByTestId('text-clip-shared-badge-1')).not.toBeInTheDocument(),
+    )
   })
 })

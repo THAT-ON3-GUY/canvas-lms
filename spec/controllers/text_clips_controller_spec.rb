@@ -19,6 +19,8 @@
 #
 
 describe TextClipsController do
+  include ActiveSupport::Testing::TimeHelpers
+
   before :once do
     course_with_teacher_and_student_enrolled(active_all: true)
     @other_course = course_factory(active_all: true)
@@ -61,6 +63,18 @@ describe TextClipsController do
         clip_ids = json_parse(response.body).pluck("id")
         expect(clip_ids).to eq [@teacher_clip.id]
         expect(clip_ids).not_to include(@student_clip.id)
+      end
+
+      it "returns clips newest first" do
+        older = @teacher_clip
+        newer = nil
+        travel_to 1.hour.from_now do
+          newer = create_clip_for(@teacher, @course, "Newer clip")
+        end
+        get :index, format: :json, params: { course_id: @course.id }
+        clip_ids = json_parse(response.body).pluck("id")
+        expect(clip_ids.first).to eq newer.id
+        expect(clip_ids).to include(older.id)
       end
 
       it "returns a Link header with rel=next when more clips exist than per_page" do

@@ -239,14 +239,25 @@ docker compose run --rm web bin/rubocop app/models/text_clip*.rb app/controllers
 
 ---
 
+## Slice 7 — Core close-out (2026-06-04)
+
+| Item | Detail |
+|------|--------|
+| PR | [#24](https://github.com/THAT-ON3-GUY/canvas-lms/pull/24) (pending merge at doc write) |
+| Jest | `TextClipsSelectionRoot.test.tsx` — FR-01 save + FR-07 editor guard |
+| RSpec | Index **newest first** example |
+| Manual | [`manual-verification-checklist.md`](manual-verification-checklist.md) — Story 12 **PASS** |
+| Issues | **#5–#16** closed on fork with traceability comments |
+
+**Core feature (FR-01–FR-07 + slices 1–6) is complete** for lab purposes.
+
 ## What is not done yet (project backlog)
 
-Per [`agents/project-creation.md`](../../project-creation.md) and [`implementation-research.md`](implementation-research.md):
+Per [`agents/project-creation.md`](../../project-creation.md):
 
-- Remaining stories (e.g. full Story 10 coverage, FR items not in slices 1–6)
-- Merge **nav visibility** follow-up (table above)
 - Optional: dedicated `/text_clips` page (deferred from slice 5 plan)
 - Production hardening, feature flag rollout, instructor board alignment via GitHub UI
+- Polish / bug-fix slice (explicitly out of scope for Slice 7)
 
 ---
 
@@ -259,4 +270,4 @@ Per [`agents/project-creation.md`](../../project-creation.md) and [`implementati
 
 ---
 
-*Last updated: 2026-06-02 — after Slice 6 merge, manual share-link QA pass, and local nav fix verification.*
+*Last updated: 2026-06-04 — Slice 7 core close-out (tests, manual checklist, issues #5–#16).*

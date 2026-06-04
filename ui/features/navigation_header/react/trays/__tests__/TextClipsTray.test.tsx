@@ -86,6 +86,72 @@ describe('TextClipsTray', () => {
     })
   })
 
+  it('pins a clip via PUT when the pin button is clicked', async () => {
+    window.ENV.COURSE_ID = '7'
+    const user = userEvent.setup()
+    let pinned = false
+    server.use(
+      http.get('*/api/v1/courses/7/text_clips', () =>
+        HttpResponse.json([
+          {
+            ...baseClip,
+            pinned,
+          },
+        ]),
+      ),
+      http.put('*/api/v1/courses/7/text_clips/1', async ({request}) => {
+        const body = (await request.json()) as {pinned?: boolean}
+        pinned = Boolean(body.pinned)
+        return HttpResponse.json({...baseClip, pinned})
+      }),
+    )
+    render(
+      <MockedQueryProvider>
+        <TextClipsTray />
+      </MockedQueryProvider>,
+    )
+    await waitFor(() => expect(screen.getByText(/alpha/)).toBeInTheDocument())
+    await user.click(screen.getByTestId('text-clip-pin-1'))
+    await waitFor(() => expect(screen.getByTestId('text-clip-pinned-1')).toBeInTheDocument())
+  })
+
+  it('requests sort=oldest when the sort select changes', async () => {
+    window.ENV.COURSE_ID = '13'
+    const user = userEvent.setup()
+    const requests: string[] = []
+    server.use(
+      http.get('*/api/v1/courses/13/text_clips', ({request}) => {
+        requests.push(request.url)
+        return HttpResponse.json([baseClip])
+      }),
+    )
+    render(
+      <MockedQueryProvider>
+        <TextClipsTray />
+      </MockedQueryProvider>,
+    )
+    await waitFor(() => expect(screen.getByTestId('text-clip-sort')).toBeInTheDocument())
+    global.event = undefined
+    await user.click(screen.getByTestId('text-clip-sort'))
+    await user.click(await screen.findByText('Oldest'))
+    await waitFor(() => expect(requests.some(url => url.includes('sort=oldest'))).toBe(true))
+  })
+
+  it('shows a pinned indicator for pinned clips', async () => {
+    window.ENV.COURSE_ID = '14'
+    server.use(
+      http.get('*/api/v1/courses/14/text_clips', () =>
+        HttpResponse.json([{...baseClip, pinned: true}]),
+      ),
+    )
+    render(
+      <MockedQueryProvider>
+        <TextClipsTray />
+      </MockedQueryProvider>,
+    )
+    await waitFor(() => expect(screen.getByTestId('text-clip-pinned-1')).toBeInTheDocument())
+  })
+
   it('lists clips, shows source link, and deletes on trash click', async () => {
     window.ENV.COURSE_ID = '7'
     const user = userEvent.setup()

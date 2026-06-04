@@ -62,4 +62,20 @@ class TextClip < ApplicationRecord
       .where(text_clip_taggings: { clip_tag_id: tag_ids, workflow_state: "active" })
       .distinct
   }
+  scope :ordered, lambda { |sort|
+    pinned_first = Arel.sql("text_clips.pinned_at DESC NULLS LAST")
+    case sort.to_s
+    when "oldest"
+      order(pinned_first, created_at: :asc, id: :asc)
+    when "source"
+      order(
+        pinned_first,
+        Arel.sql("LOWER(text_clips.source_title) ASC NULLS LAST"),
+        created_at: :desc,
+        id: :desc
+      )
+    else
+      order(pinned_first, created_at: :desc, id: :desc)
+    end
+  }
 end

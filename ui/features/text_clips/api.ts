@@ -18,6 +18,7 @@
 
 import doFetchApi from '@canvas/do-fetch-api-effect'
 import type {
+  ClipSort,
   ClipTagColor,
   ClipTagRecord,
   TextClipCreate,
@@ -29,10 +30,13 @@ import type {
 
 export function textClipsIndexPath(
   courseId: string | number,
-  opts?: {q?: string; perPage?: number; tagIds?: Array<number | string>},
+  opts?: {q?: string; perPage?: number; tagIds?: Array<number | string>; sort?: ClipSort},
 ): string {
   const params = new URLSearchParams()
   params.set('per_page', String(opts?.perPage ?? 20))
+  if (opts?.sort && opts.sort !== 'recent') {
+    params.set('sort', opts.sort)
+  }
   if (opts?.q) {
     params.set('q', opts.q)
   }
@@ -47,9 +51,13 @@ export function globalTextClipsIndexPath(opts?: {
   perPage?: number
   tagIds?: Array<number | string>
   courseIds?: Array<number | string>
+  sort?: ClipSort
 }): string {
   const params = new URLSearchParams()
   params.set('per_page', String(opts?.perPage ?? 20))
+  if (opts?.sort && opts.sort !== 'recent') {
+    params.set('sort', opts.sort)
+  }
   if (opts?.q) {
     params.set('q', opts.q)
   }

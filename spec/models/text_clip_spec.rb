@@ -254,6 +254,25 @@ describe TextClip do
     end
   end
 
+  describe ".ordered" do
+    it "orders pinned clips before unpinned clips" do
+      pinned = TextClip.create!(
+        user_id: @student.id,
+        course_id: @course.id,
+        content: "Pinned",
+        pinned_at: Time.now.utc,
+        root_account_id: @course.root_account_id
+      )
+      unpinned = @student_clip
+      expect(TextClip.ordered("recent").pick(:id)).to eq pinned.id
+      expect(TextClip.ordered("recent").pluck(:id)).to include(unpinned.id)
+    end
+
+    it "orders oldest first when sort is oldest" do
+      expect(TextClip.ordered("oldest").pick(:id)).to eq @student_clip.id
+    end
+  end
+
   describe "clip_tags association" do
     it "returns only active tags through active taggings" do
       tag = ClipTag.create!(

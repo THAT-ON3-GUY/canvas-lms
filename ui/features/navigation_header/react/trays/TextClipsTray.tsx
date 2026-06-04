@@ -26,10 +26,13 @@ import {
   IconEditLine,
   IconExternalLinkLine,
   IconLinkLine,
+  IconPinLine,
+  IconPinSolid,
   IconTrashLine,
 } from '@instructure/ui-icons'
 import {Link} from '@instructure/ui-link'
 import {List} from '@instructure/ui-list'
+import {SimpleSelect} from '@instructure/ui-simple-select'
 import {showFlashAlert} from '@instructure/platform-alerts'
 import {Spinner} from '@instructure/ui-spinner'
 import {Tag} from '@instructure/ui-tag'
@@ -61,6 +64,7 @@ import {
 import {sourceUrlWithHighlight} from '../../../text_clips/highlightRestore'
 import {CLIP_TAG_PALETTE, CLIP_TAG_THEME} from '../../../text_clips/tagColors'
 import type {
+  ClipSort,
   ClipTagColor,
   ClipTagRecord,
   TextClipRecord,
@@ -133,6 +137,7 @@ type TextClipListItemProps = {
   onCancelEdit: () => void
   onSaveEdit: (id: number | string, body: TextClipUpdate) => void
   onDelete: (clip: TextClipRecord) => void
+  onTogglePin: (clip: TextClipRecord) => void
   onToggleEditTag: (tagId: number | string) => void
   sharePanelOpen: boolean
   onToggleSharePanel: () => void
@@ -141,6 +146,7 @@ type TextClipListItemProps = {
   onCopyShareLink: (url: string) => void
   isSaving: boolean
   isDeleting: boolean
+  isPinning: boolean
   isSharing: boolean
 }
 
@@ -155,6 +161,7 @@ function TextClipListItem({
   onCancelEdit,
   onSaveEdit,
   onDelete,
+  onTogglePin,
   onToggleEditTag,
   sharePanelOpen,
   onToggleSharePanel,
@@ -163,6 +170,7 @@ function TextClipListItem({
   onCopyShareLink,
   isSaving,
   isDeleting,
+  isPinning,
   isSharing,
 }: TextClipListItemProps) {
   const isEditing = editingId === clip.id
@@ -230,7 +238,16 @@ function TextClipListItem({
           </>
         ) : (
           <>
-            <Text>{clipPreview(clip.content)}</Text>
+            <Flex alignItems="center" gap="xx-small">
+              {clip.pinned && (
+                <IconPinSolid
+                  size="x-small"
+                  color="secondary"
+                  data-testid={`text-clip-pinned-${clip.id}`}
+                />
+              )}
+              <Text>{clipPreview(clip.content)}</Text>
+            </Flex>
             {clip.tags && clip.tags.length > 0 && (
               <Flex wrap="wrap" margin="xx-small 0 0 0" data-testid={`text-clip-tags-${clip.id}`}>
                 {clip.tags.map(tag => (
@@ -290,11 +307,20 @@ function TextClipListItem({
               <IconButton
                 size="small"
                 margin="0 x-small 0 0"
+                screenReaderLabel={clip.pinned ? I18n.t('Unpin clip') : I18n.t('Pin clip to top')}
+                renderIcon={clip.pinned ? IconPinSolid : IconPinLine}
+                data-testid={`text-clip-pin-${clip.id}`}
+                onClick={() => onTogglePin(clip)}
+                interaction={isDeleting || isPinning || isSharing ? 'disabled' : 'enabled'}
+              />
+              <IconButton
+                size="small"
+                margin="0 x-small 0 0"
                 screenReaderLabel={I18n.t('Share clip')}
                 renderIcon={IconLinkLine}
                 data-testid={`text-clip-share-${clip.id}`}
                 onClick={onToggleSharePanel}
-                interaction={isDeleting || isSharing ? 'disabled' : 'enabled'}
+                interaction={isDeleting || isPinning || isSharing ? 'disabled' : 'enabled'}
               />
               <IconButton
                 size="small"
@@ -303,7 +329,7 @@ function TextClipListItem({
                 renderIcon={IconEditLine}
                 data-testid={`text-clip-edit-${clip.id}`}
                 onClick={() => onStartEdit(clip)}
-                interaction={isDeleting ? 'disabled' : 'enabled'}
+                interaction={isDeleting || isPinning ? 'disabled' : 'enabled'}
               />
               <IconButton
                 size="small"
@@ -311,7 +337,7 @@ function TextClipListItem({
                 renderIcon={IconTrashLine}
                 data-testid={`text-clip-delete-${clip.id}`}
                 onClick={() => onDelete(clip)}
-                interaction={isDeleting ? 'disabled' : 'enabled'}
+                interaction={isDeleting || isPinning ? 'disabled' : 'enabled'}
               />
             </View>
             {sharePanelOpen && (
@@ -390,6 +416,7 @@ export default function TextClipsTray({showViewAllLink = true}: TextClipsTrayPro
   const [renamingTagId, setRenamingTagId] = useState<number | string | null>(null)
   const [renameDraft, setRenameDraft] = useState('')
   const [sharePanelClipId, setSharePanelClipId] = useState<number | string | null>(null)
+  const [sort, setSort] = useState<ClipSort>('recent')
 
   useEffect(() => {
     const handle = window.setTimeout(() => {
@@ -416,13 +443,14 @@ export default function TextClipsTray({showViewAllLink = true}: TextClipsTrayPro
 
   const queryKey =
     mode === 'course'
-      ? (['text_clips', 'course', courseId, debouncedSearch, selectedTagIdsArray] as const)
+      ? (['text_clips', 'course', courseId, debouncedSearch, selectedTagIdsArray, sort] as const)
       : ([
           'text_clips',
           'global',
           debouncedSearch,
           selectedTagIdsArray,
           selectedCourseIdsArray,
+          sort,
         ] as const)
 
   const clipTagsQueryKey = ['clip_tags'] as const
@@ -436,11 +464,13 @@ export default function TextClipsTray({showViewAllLink = true}: TextClipsTrayPro
       ? textClipsIndexPath(courseId as string | number, {
           q: debouncedSearch || undefined,
           tagIds: selectedTagIdsArray.length > 0 ? selectedTagIdsArray : undefined,
+          sort,
         })
       : globalTextClipsIndexPath({
           q: debouncedSearch || undefined,
           tagIds: selectedTagIdsArray.length > 0 ? selectedTagIdsArray : undefined,
           courseIds: selectedCourseIdsArray.length > 0 ? selectedCourseIdsArray : undefined,
+          sort,
         })
 
   const {data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage} =
@@ -567,6 +597,14 @@ export default function TextClipsTray({showViewAllLink = true}: TextClipsTrayPro
     },
   })
 
+  const togglePinMutation = useMutation({
+    mutationFn: (clip: TextClipRecord) =>
+      mode === 'course'
+        ? updateTextClip(courseId as string | number, clip.id, {pinned: !clip.pinned})
+        : updateGlobalTextClip(clip.id, {pinned: !clip.pinned}),
+    onSuccess: () => invalidateClips(),
+  })
+
   const undoMutation = useMutation({
     mutationFn: (id: number | string) =>
       mode === 'course'
@@ -679,6 +717,25 @@ export default function TextClipsTray({showViewAllLink = true}: TextClipsTrayPro
           </Flex>
         </View>
       )}
+
+      <View margin="small 0">
+        <SimpleSelect
+          renderLabel={I18n.t('Sort')}
+          value={sort}
+          onChange={(_e, {value}) => setSort(value as ClipSort)}
+          data-testid="text-clip-sort"
+        >
+          <SimpleSelect.Option id="sort-recent" value="recent">
+            {I18n.t('Recent')}
+          </SimpleSelect.Option>
+          <SimpleSelect.Option id="sort-oldest" value="oldest">
+            {I18n.t('Oldest')}
+          </SimpleSelect.Option>
+          <SimpleSelect.Option id="sort-source" value="source">
+            {I18n.t('Source')}
+          </SimpleSelect.Option>
+        </SimpleSelect>
+      </View>
 
       {clipTags.length > 0 && (
         <View margin="small 0" data-testid="text-clips-tag-filter">
@@ -896,6 +953,7 @@ export default function TextClipsTray({showViewAllLink = true}: TextClipsTrayPro
                 }}
                 onSaveEdit={(id, body) => updateMutation.mutate({id, body})}
                 onDelete={clipToDelete => deleteMutation.mutate(clipToDelete.id)}
+                onTogglePin={clipToPin => togglePinMutation.mutate(clipToPin)}
                 sharePanelOpen={sharePanelClipId === clip.id}
                 onToggleSharePanel={() =>
                   setSharePanelClipId(prev => (prev === clip.id ? null : clip.id))
@@ -905,6 +963,7 @@ export default function TextClipsTray({showViewAllLink = true}: TextClipsTrayPro
                 onCopyShareLink={copyShareLink}
                 isSaving={updateMutation.isPending}
                 isDeleting={deleteMutation.isPending}
+                isPinning={togglePinMutation.isPending}
                 isSharing={shareMutation.isPending || unshareMutation.isPending}
               />
             ))}

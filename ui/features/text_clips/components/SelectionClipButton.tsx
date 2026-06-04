@@ -38,6 +38,8 @@ export default function SelectionClipButton({
 }: SelectionClipButtonProps) {
   return (
     <span
+      role="group"
+      aria-label={I18n.t('Text clip selection')}
       style={{
         position: 'fixed',
         top: `${Math.max(8, top)}px`,

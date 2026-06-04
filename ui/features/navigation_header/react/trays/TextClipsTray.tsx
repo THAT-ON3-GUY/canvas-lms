@@ -41,7 +41,7 @@ import {Text} from '@instructure/ui-text'
 import {TextArea} from '@instructure/ui-text-area'
 import {TextInput} from '@instructure/ui-text-input'
 import {View} from '@instructure/ui-view'
-import React, {useCallback, useEffect, useMemo, useState} from 'react'
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {useInfiniteQuery, useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
 import {
   createClipTag,
@@ -151,6 +151,8 @@ type TextClipListItemProps = {
   onCopyCitation: (clip: TextClipRecord) => void
   bulkSelected: boolean
   onToggleBulkSelect: () => void
+  onRowKeyDown: (event: React.KeyboardEvent, index: number) => void
+  rowIndex: number
   isSaving: boolean
   isDeleting: boolean
   isPinning: boolean
@@ -179,16 +181,44 @@ function TextClipListItem({
   onCopyCitation,
   bulkSelected,
   onToggleBulkSelect,
+  onRowKeyDown,
+  rowIndex,
   isSaving,
   isDeleting,
   isPinning,
   isSharing,
 }: TextClipListItemProps) {
   const isEditing = editingId === clip.id
+  const sharePanelRef = useRef<Element | null>(null)
+  const shareToggleRef = useRef<Element | null>(null)
+
+  useEffect(() => {
+    if (isEditing) {
+      document
+        .querySelector<HTMLTextAreaElement>(`[data-testid="text-clip-edit-content-${clip.id}"]`)
+        ?.focus()
+    }
+  }, [isEditing, clip.id])
+
+  useEffect(() => {
+    if (sharePanelOpen) {
+      const focusable = sharePanelRef.current?.querySelector<HTMLElement>(
+        'button, [href], input, textarea, select',
+      )
+      focusable?.focus()
+    } else {
+      ;(shareToggleRef.current as HTMLElement | null)?.focus()
+    }
+  }, [sharePanelOpen])
 
   return (
     <List.Item>
-      <View display="block">
+      <View
+        display="block"
+        tabIndex={0}
+        data-clip-row={String(clip.id)}
+        onKeyDown={event => onRowKeyDown(event, rowIndex)}
+      >
         {isEditing && editDraft ? (
           <>
             <TextArea
@@ -367,11 +397,15 @@ function TextClipListItem({
                     interaction={isDeleting || isPinning || isSharing ? 'disabled' : 'enabled'}
                   />
                   <IconButton
+                    elementRef={el => {
+                      shareToggleRef.current = el
+                    }}
                     size="small"
                     margin="0 x-small 0 0"
                     screenReaderLabel={I18n.t('Share clip')}
                     renderIcon={IconLinkLine}
                     data-testid={`text-clip-share-${clip.id}`}
+                    aria-expanded={sharePanelOpen}
                     onClick={onToggleSharePanel}
                     interaction={isDeleting || isPinning || isSharing ? 'disabled' : 'enabled'}
                   />
@@ -395,10 +429,15 @@ function TextClipListItem({
                 </View>
                 {sharePanelOpen && (
                   <View
+                    elementRef={el => {
+                      sharePanelRef.current = el
+                    }}
                     margin="x-small 0 0 0"
                     padding="small"
                     borderWidth="small"
                     data-testid={`text-clip-share-panel-${clip.id}`}
+                    role="region"
+                    aria-label={I18n.t('Share clip link')}
                   >
                     {clip.share ? (
                       <>
@@ -836,6 +875,26 @@ export default function TextClipsTray({showViewAllLink = true}: TextClipsTrayPro
     showFlashAlert({message: I18n.t('Export started'), type: 'success'})
   }, [exportFormat, exportTargetClips])
 
+  const focusClipRow = useCallback((clipId: number | string) => {
+    const row = document.querySelector<HTMLElement>(`[data-clip-row="${clipId}"]`)
+    row?.focus()
+  }, [])
+
+  const handleClipRowKeyDown = useCallback(
+    (event: React.KeyboardEvent, index: number) => {
+      if (event.key === 'ArrowDown') {
+        event.preventDefault()
+        const next = clips[index + 1]
+        if (next) focusClipRow(next.id)
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault()
+        const prev = clips[index - 1]
+        if (prev) focusClipRow(prev.id)
+      }
+    },
+    [clips, focusClipRow],
+  )
+
   return (
     <View as="div" padding="medium" id="text_clips_tray">
       <Flex alignItems="center" gap="small" margin="0 0 small 0">
@@ -1097,7 +1156,12 @@ export default function TextClipsTray({showViewAllLink = true}: TextClipsTrayPro
 
       {!isLoading && !isError && !searchTooShort && clips.length > 0 && (
         <>
-          <View margin="small 0" data-testid="text-clips-bulk-toolbar">
+          <View
+            margin="small 0"
+            data-testid="text-clips-bulk-toolbar"
+            role="toolbar"
+            aria-label={I18n.t('Bulk clip actions')}
+          >
             <Flex wrap="wrap" alignItems="center" gap="x-small">
               <Checkbox
                 label={I18n.t('Select all')}
@@ -1170,11 +1234,17 @@ export default function TextClipsTray({showViewAllLink = true}: TextClipsTrayPro
               </Flex>
             )}
           </View>
-          <List isUnstyled margin="small 0" itemSpacing="small">
-            {clips.map(clip => (
+          <List
+            isUnstyled
+            margin="small 0"
+            itemSpacing="small"
+            aria-label={I18n.t('Saved text clips')}
+          >
+            {clips.map((clip, index) => (
               <TextClipListItem
                 key={String(clip.id)}
                 clip={clip}
+                rowIndex={index}
                 editingId={editingId}
                 editDraft={editDraft}
                 allTags={clipTags}
@@ -1200,6 +1270,7 @@ export default function TextClipsTray({showViewAllLink = true}: TextClipsTrayPro
                 onCopyCitation={copyCitation}
                 bulkSelected={bulkSelectedIds.has(clip.id)}
                 onToggleBulkSelect={() => toggleBulkSelect(clip.id)}
+                onRowKeyDown={handleClipRowKeyDown}
                 isSaving={updateMutation.isPending}
                 isDeleting={deleteMutation.isPending}
                 isPinning={togglePinMutation.isPending}

@@ -722,6 +722,23 @@ describe('TextClipsTray', () => {
     clipboardStub.mockRestore()
   })
 
+  it('exposes aria-expanded on the share toggle when the panel opens', async () => {
+    window.ENV.COURSE_ID = '32'
+    const user = userEvent.setup()
+    server.use(http.get('*/api/v1/courses/32/text_clips', () => HttpResponse.json([baseClip])))
+    render(
+      <MockedQueryProvider>
+        <TextClipsTray />
+      </MockedQueryProvider>,
+    )
+    await waitFor(() => expect(screen.getByText(/alpha/)).toBeInTheDocument())
+    const shareButton = screen.getByTestId('text-clip-share-1')
+    expect(shareButton).toHaveAttribute('aria-expanded', 'false')
+    await user.click(shareButton)
+    expect(shareButton).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByTestId('text-clip-share-panel-1')).toBeInTheDocument()
+  })
+
   it('exports all loaded clips', async () => {
     window.ENV.COURSE_ID = '40'
     const user = userEvent.setup()

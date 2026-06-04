@@ -255,7 +255,7 @@ docker compose run --rm web bin/rubocop app/models/text_clip*.rb app/controllers
 
 | Item | Detail |
 |------|--------|
-| PR | [#25](https://github.com/THAT-ON3-GUY/canvas-lms/pull/25) — merge TBD |
+| PR | [#25](https://github.com/THAT-ON3-GUY/canvas-lms/pull/25) — merge `cf75128c12e` |
 | URL | http://localhost:3000/text_clips (logged in) |
 | UX | Tray header **View all clips** → full page; page reuses `TextClipsTray` in global mode |
 

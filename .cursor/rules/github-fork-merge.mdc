@@ -1,0 +1,29 @@
+---
+description: Merge PRs only on the user's Canvas fork, never upstream instructure/canvas-lms
+alwaysApply: true
+---
+
+# GitHub — fork-only merge policy
+
+When the user asks to **merge**, **open a PR**, or **push for merge**:
+
+- **Repository:** `THAT-ON3-GUY/canvas-lms` only (`origin`).
+- **Base branch:** `master` on that fork (integration branch for this project).
+- **Do not** create, target, or merge PRs against `instructure/canvas-lms` or any other upstream remote default branch.
+
+## `gh` CLI
+
+Always pass the fork explicitly:
+
+```bash
+gh pr create --repo THAT-ON3-GUY/canvas-lms --base master ...
+gh pr merge <number> --repo THAT-ON3-GUY/canvas-lms --squash ...
+gh pr view <number> --repo THAT-ON3-GUY/canvas-lms
+```
+
+Do not rely on `gh` default repo (it may resolve to `instructure/canvas-lms` when `upstream` is configured).
+
+## Git remotes
+
+- `origin` → `THAT-ON3-GUY/canvas-lms` (push, PR, merge here)
+- `upstream` → `instructure/canvas-lms` (fetch/reference only unless the user explicitly asks to interact with upstream)

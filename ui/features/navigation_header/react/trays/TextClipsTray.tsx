@@ -368,7 +368,11 @@ function TextClipListItem({
   )
 }
 
-export default function TextClipsTray() {
+type TextClipsTrayProps = {
+  showViewAllLink?: boolean
+}
+
+export default function TextClipsTray({showViewAllLink = true}: TextClipsTrayProps) {
   const queryClient = useQueryClient()
   const courseId = window.ENV.COURSE_ID
   const mode: 'course' | 'global' = courseId ? 'course' : 'global'
@@ -633,9 +637,16 @@ export default function TextClipsTray() {
 
   return (
     <View as="div" padding="medium" id="text_clips_tray">
-      <Heading level="h3" as="h2">
-        {I18n.t('Text clips')}
-      </Heading>
+      <Flex alignItems="center" gap="small" margin="0 0 small 0">
+        <Heading level="h3" as="h2" margin="none">
+          {I18n.t('Text clips')}
+        </Heading>
+        {showViewAllLink && (
+          <Link href="/text_clips" data-testid="text-clips-view-all-link">
+            {I18n.t('View all clips')}
+          </Link>
+        )}
+      </Flex>
       <hr role="presentation" />
 
       {mode === 'global' && courseFilterOptions.length > 0 && (

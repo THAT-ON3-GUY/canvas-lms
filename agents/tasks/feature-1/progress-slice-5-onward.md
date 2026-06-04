@@ -249,13 +249,21 @@ docker compose run --rm web bin/rubocop app/models/text_clip*.rb app/controllers
 | Manual | [`manual-verification-checklist.md`](manual-verification-checklist.md) — Story 12 **PASS** |
 | Issues | **#5–#16** closed on fork with traceability comments |
 
-**Core feature (FR-01–FR-07 + slices 1–6) is complete** for lab purposes.
+**Core feature (FR-01–FR-07 + slices 1–7) is complete** for lab purposes.
+
+## Slice 8 — Full-page /text_clips (2026-06-04)
+
+| Item | Detail |
+|------|--------|
+| PR | [#25](https://github.com/THAT-ON3-GUY/canvas-lms/pull/25) — merge TBD |
+| URL | http://localhost:3000/text_clips (logged in) |
+| UX | Tray header **View all clips** → full page; page reuses `TextClipsTray` in global mode |
+
+**Manual check:** Log in → open Text clips tray → click **View all clips** → confirm full-page list, search, tags, share work.
 
 ## What is not done yet (project backlog)
 
 Per [`agents/project-creation.md`](../../project-creation.md):
-
-- Optional: dedicated `/text_clips` page (deferred from slice 5 plan)
 - Production hardening, feature flag rollout, instructor board alignment via GitHub UI
 - Polish / bug-fix slice (explicitly out of scope for Slice 7)
 
@@ -270,4 +278,4 @@ Per [`agents/project-creation.md`](../../project-creation.md):
 
 ---
 
-*Last updated: 2026-06-04 — Slice 7 core close-out (tests, manual checklist, issues #5–#16).*
+*Last updated: 2026-06-04 — Slice 8 full-page /text_clips.*

@@ -261,6 +261,16 @@ docker compose run --rm web bin/rubocop app/models/text_clip*.rb app/controllers
 
 **Manual check:** Log in → open Text clips tray → click **View all clips** → confirm full-page list, search, tags, share work.
 
+## Slice 9 — Highlight restore on source pages (2026-06-04)
+
+| Item | Detail |
+|------|--------|
+| PR | [#26](https://github.com/THAT-ON3-GUY/canvas-lms/pull/26) |
+| UX | Tray/full-page **source** link appends `#text_clip_highlight=<snippet>`; destination page scrolls + ~4s yellow highlight |
+| Miss | Info flash: “Couldn't find the clipped text on this page” |
+
+**Manual check:** Clip text on a course page → tray → open source link → page scrolls/highlights; edit page to remove text → open source → info flash (no error).
+
 ## What is not done yet (project backlog)
 
 Per [`agents/project-creation.md`](../../project-creation.md):
@@ -278,4 +288,4 @@ Per [`agents/project-creation.md`](../../project-creation.md):
 
 ---
 
-*Last updated: 2026-06-04 — Slice 8 full-page /text_clips.*
+*Last updated: 2026-06-04 — Slice 9 highlight restore on source pages.*

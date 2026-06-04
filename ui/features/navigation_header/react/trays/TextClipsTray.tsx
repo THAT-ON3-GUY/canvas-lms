@@ -58,6 +58,7 @@ import {
   updateGlobalTextClip,
   updateTextClip,
 } from '../../../text_clips/api'
+import {sourceUrlWithHighlight} from '../../../text_clips/highlightRestore'
 import {CLIP_TAG_PALETTE, CLIP_TAG_THEME} from '../../../text_clips/tagColors'
 import type {
   ClipTagColor,
@@ -276,7 +277,7 @@ function TextClipListItem({
               {clip.source_url && (
                 <Link
                   isWithinText={false}
-                  href={clip.source_url}
+                  href={sourceUrlWithHighlight(clip) ?? clip.source_url}
                   target="_blank"
                   rel="noopener noreferrer"
                   data-testid={`text-clip-source-${clip.id}`}

@@ -19,6 +19,7 @@
 import {render} from '@canvas/react'
 import ready from '@instructure/ready'
 import TextClipsSelectionRoot from './components/TextClipsSelectionRoot'
+import {scheduleHighlightRestore} from './highlightRestore'
 
 ready(() => {
   let mount = document.getElementById('text-clips-selection-mount')
@@ -28,4 +29,5 @@ ready(() => {
     document.body.appendChild(mount)
   }
   render(<TextClipsSelectionRoot />, mount)
+  scheduleHighlightRestore()
 })

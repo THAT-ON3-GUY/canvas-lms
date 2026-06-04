@@ -243,7 +243,7 @@ docker compose run --rm web bin/rubocop app/models/text_clip*.rb app/controllers
 
 | Item | Detail |
 |------|--------|
-| PR | [#24](https://github.com/THAT-ON3-GUY/canvas-lms/pull/24) (pending merge at doc write) |
+| PR | [#24](https://github.com/THAT-ON3-GUY/canvas-lms/pull/24) — merge `28654a2ce0f` |
 | Jest | `TextClipsSelectionRoot.test.tsx` — FR-01 save + FR-07 editor guard |
 | RSpec | Index **newest first** example |
 | Manual | [`manual-verification-checklist.md`](manual-verification-checklist.md) — Story 12 **PASS** |

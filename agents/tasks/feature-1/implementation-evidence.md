@@ -11,7 +11,7 @@
 | https://github.com/THAT-ON3-GUY/canvas-lms/pull/21 | **Slice 5 — Global clips view:** `/api/v1/users/self/text_clips`, global SideNav + tray mode, off-course selection clip (`course_id: nil`), layout bundle for all logged-in pages, `for_courses` scope, course stub in JSON. Refs #5, #7, #8, #9, #16; more Story 10 coverage. |
 | https://github.com/THAT-ON3-GUY/canvas-lms/pull/22 | **Slice 6 — Read-only share links:** `text_clip_shares`, owner `POST/DELETE .../share`, anonymous `GET /text_clips/shared/:token`, tray share UI (create/copy/revoke). Refs #5, #7, #10, #11. |
 | https://github.com/THAT-ON3-GUY/canvas-lms/pull/23 | **Nav + progress doc:** classic nav Text clips entry, OldSideNav tray, InstUI header mount, `progress-slice-5-onward.md`. Merge `4b1ada9aebb`. |
-| https://github.com/THAT-ON3-GUY/canvas-lms/pull/24 | **Slice 7 — Core close-out:** `TextClipsSelectionRoot` Jest (FR-01/FR-07), index newest-first RSpec, Story 12 manual checklist, closed issues #5–#16. Closes #10, #11, #12. |
+| https://github.com/THAT-ON3-GUY/canvas-lms/pull/24 | **Slice 7 — Core close-out:** `TextClipsSelectionRoot` Jest (FR-01/FR-07), index newest-first RSpec, Story 12 manual checklist, closed issues #5–#16. Closes #10, #11, #12. Merge: `28654a2ce0f`. |
 
 ## Board: item titles and status timeline
 

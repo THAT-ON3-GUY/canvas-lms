@@ -305,7 +305,7 @@ docker compose run --rm web bin/rubocop app/models/text_clip*.rb app/controllers
 | Item | Detail |
 |------|--------|
 | PR | [#30](https://github.com/THAT-ON3-GUY/canvas-lms/pull/30) — merge `65910ea716e` |
-| Flag | Account `text_clips` (hidden; enable per account in dev/ci) |
+| Flag | Account `text_clips` (`allowed_on` by default; can disable per account) |
 | Gate | API, `/text_clips` page, clip tags, bundles, SideNav/classic nav |
 
 **Manual check:** Disable flag on account → nav hidden, API 404; shared URL still loads anonymously.

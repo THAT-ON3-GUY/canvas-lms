@@ -1,6 +1,6 @@
 ---
 text_clips:
-  state: hidden
+  state: allowed_on
   display_name: Text clips
   description: |-
     Enables the Text clips feature: selection capture, tray, full-page library,
@@ -10,4 +10,6 @@ text_clips:
     ci:
       state: allowed_on
     development:
+      state: allowed_on
+    production:
       state: allowed_on

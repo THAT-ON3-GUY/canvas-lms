@@ -194,6 +194,34 @@ describe('TextClipsSelectionRoot', () => {
     })
   })
 
+  it('posts content_html when the selection includes formatting', async () => {
+    const host = document.createElement('p')
+    host.innerHTML = 'See <strong>bold</strong> text'
+    document.body.appendChild(host)
+
+    const strong = host.querySelector('strong')!
+    const range = document.createRange()
+    range.setStart(host.firstChild as Text, 4)
+    range.setEnd(strong.lastChild as Text, strong.lastChild!.textContent!.length)
+    const sel = window.getSelection()!
+    sel.removeAllRanges()
+    sel.addRange(range)
+    document.dispatchEvent(new Event('mouseup'))
+
+    renderRoot()
+    fireEvent.click(await screen.findByTestId('text-clip-selection-button'))
+
+    await waitFor(() => {
+      expect(mockedCreateTextClip).toHaveBeenCalledWith(
+        '42',
+        expect.objectContaining({
+          content: expect.stringContaining('bold'),
+          content_html: expect.stringMatching(/<strong>/),
+        }),
+      )
+    })
+  })
+
   it('does not render the clip button when selection is inside TinyMCE', async () => {
     const tox = document.createElement('div')
     tox.className = 'tox-edit-area'

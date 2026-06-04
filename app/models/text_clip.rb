@@ -21,6 +21,8 @@ class TextClip < ApplicationRecord
   extend RootAccountResolver
   include Canvas::SoftDeletable
 
+  sanitize_field :content_html, CanvasSanitize::SANITIZE
+
   belongs_to :user
   belongs_to :course, optional: true
   has_many :text_clip_taggings, dependent: :destroy
@@ -41,6 +43,7 @@ class TextClip < ApplicationRecord
 
   validates :user_id, presence: true
   validates :content, presence: true, length: { maximum: 50_000 }
+  validates :content_html, length: { maximum: 200_000 }, allow_nil: true
   validates :source_url, length: { maximum: 2048 }, allow_nil: true
   validates :source_title, length: { maximum: 512 }, allow_nil: true
   validates :note, length: { maximum: 10_000 }, allow_nil: true

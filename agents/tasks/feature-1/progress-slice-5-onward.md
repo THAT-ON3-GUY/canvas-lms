@@ -281,6 +281,16 @@ docker compose run --rm web bin/rubocop app/models/text_clip*.rb app/controllers
 
 **Manual check:** Pin a clip → it stays at top when sorting; unpin → normal order; sort Oldest/Source updates list (pinned still first).
 
+## Slice 11 — Rich-content clipping (2026-06-04)
+
+| Item | Detail |
+|------|--------|
+| PR | [#28](https://github.com/THAT-ON3-GUY/canvas-lms/pull/28) |
+| UX | Clipping bold/links/lists preserves formatting in tray, full page, and shared link |
+| API | `POST/PUT` accepts `content_html`; JSON includes sanitized `content_html` |
+
+**Manual check:** Clip formatted text → tray shows HTML; share link renders formatting; edit plain text → rich view clears.
+
 ## What is not done yet (project backlog)
 
 Per [`agents/project-creation.md`](../../project-creation.md):
@@ -298,4 +308,4 @@ Per [`agents/project-creation.md`](../../project-creation.md):
 
 ---
 
-*Last updated: 2026-06-04 — Slice 10 pin & sort clips.*
+*Last updated: 2026-06-04 — Slice 11 rich-content clipping.*

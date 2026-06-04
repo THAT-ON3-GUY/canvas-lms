@@ -32,3 +32,15 @@ export function getSelectedText(sel: Selection | null): string {
   if (!sel || sel.isCollapsed) return ''
   return sel.toString().trim()
 }
+
+export function getSelectedHtml(sel: Selection | null): string {
+  if (!sel || sel.isCollapsed || sel.rangeCount === 0) return ''
+  const range = sel.getRangeAt(0).cloneRange()
+  const div = document.createElement('div')
+  div.appendChild(range.cloneContents())
+  return div.innerHTML.trim()
+}
+
+export function hasFormattedHtml(html: string): boolean {
+  return /<[a-z][\s\S]*>/i.test(html)
+}

@@ -23,7 +23,7 @@ module Api::V1::TextClip
   include Api::V1::TextClipShare
 
   API_JSON_OPTS = {
-    only: %w[id content source_url source_title note pinned_at user_id course_id workflow_state created_at updated_at]
+    only: %w[id content content_html source_url source_title note pinned_at user_id course_id workflow_state created_at updated_at]
   }.freeze
 
   def text_clip_json(clip, user, session, opts = {})

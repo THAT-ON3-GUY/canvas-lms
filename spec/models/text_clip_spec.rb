@@ -273,6 +273,24 @@ describe TextClip do
     end
   end
 
+  describe "content_html sanitization" do
+    it "strips scripts and unsafe attributes while keeping basic formatting" do
+      clip = TextClip.create!(
+        user_id: @student.id,
+        course_id: @course.id,
+        content: "Bold link",
+        content_html: '<p><strong>Bold</strong> <a href="https://example.com" onclick="alert(1)">link</a></p><script>evil()</script><ul><li>one</li></ul>',
+        root_account_id: @course.root_account_id
+      )
+      html = clip.content_html
+      expect(html).not_to include("<script")
+      expect(html).not_to include("onclick")
+      expect(html).to include("<strong>")
+      expect(html).to include("<a")
+      expect(html).to include("<ul>")
+    end
+  end
+
   describe "clip_tags association" do
     it "returns only active tags through active taggings" do
       tag = ClipTag.create!(

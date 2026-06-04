@@ -13,6 +13,7 @@
 | https://github.com/THAT-ON3-GUY/canvas-lms/pull/23 | **Nav + progress doc:** classic nav Text clips entry, OldSideNav tray, InstUI header mount, `progress-slice-5-onward.md`. Merge `4b1ada9aebb`. |
 | https://github.com/THAT-ON3-GUY/canvas-lms/pull/24 | **Slice 7 — Core close-out:** `TextClipsSelectionRoot` Jest (FR-01/FR-07), index newest-first RSpec, Story 12 manual checklist, closed issues #5–#16. Closes #10, #11, #12. Merge: `28654a2ce0f`. |
 | https://github.com/THAT-ON3-GUY/canvas-lms/pull/25 | **Slice 8 — Full-page /text_clips:** `TextClipsPagesController`, `text_clips_page` bundle, reuses `TextClipsTray` in global mode, “View all clips” tray link. Merge: `cf75128c12e`. |
+| https://github.com/THAT-ON3-GUY/canvas-lms/pull/26 | **Slice 9 — Highlight restore:** `highlightRestore.ts`, source links carry `#text_clip_highlight=`, bundle retries on page load. Frontend-only. |
 
 ## Board: item titles and status timeline
 
@@ -193,3 +194,16 @@ Closes the original **Testing & Verification** milestone and FR-01–FR-07 accep
 ### Trace
 
 Deferred full-page manager from Slice 5 plan; no new API or migrations.
+
+## Slice 9 — Highlight restoration on source pages
+
+### Scope delivered
+
+- **Module:** [`ui/features/text_clips/highlightRestore.ts`](../../../ui/features/text_clips/highlightRestore.ts) — `buildHighlightHash`, `parseHighlightTarget`, `findTextRange`, `applyHighlight` (CSS Custom Highlight API + scroll fallback), `scheduleHighlightRestore`
+- **Bundle:** [`ui/features/text_clips/index.tsx`](../../../ui/features/text_clips/index.tsx) calls `scheduleHighlightRestore()` after selection root render (retries for late DOM)
+- **Tray:** [`TextClipsTray.tsx`](../../../ui/features/navigation_header/react/trays/TextClipsTray.tsx) source `Link` uses `sourceUrlWithHighlight(clip)` so opening source re-highlights clipped text
+- **Tests:** [`highlightRestore.test.ts`](../../../ui/features/text_clips/__tests__/highlightRestore.test.ts); tray source `href` fragment assertion
+
+### Trace
+
+Frontend-only; no API, controller, or migration changes. First-match only; graceful info flash when text is missing on the page.

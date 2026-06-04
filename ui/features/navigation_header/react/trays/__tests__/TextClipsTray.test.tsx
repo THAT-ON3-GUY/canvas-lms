@@ -113,6 +113,8 @@ describe('TextClipsTray', () => {
     await waitFor(() =>
       expect(screen.getByTestId('text-clip-source-1')).toHaveTextContent('Week 1 Page'),
     )
+    const sourceLink = screen.getByTestId('text-clip-source-1').closest('a')
+    expect(sourceLink).toHaveAttribute('href', expect.stringMatching(/#text_clip_highlight=alpha/))
     await user.click(screen.getByTestId('text-clip-delete-1'))
     await waitFor(() => expect(screen.getByText(/No clips yet/i)).toBeInTheDocument())
   })

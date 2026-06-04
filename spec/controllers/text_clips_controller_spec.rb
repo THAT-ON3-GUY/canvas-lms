@@ -24,6 +24,7 @@ describe TextClipsController do
   before :once do
     course_with_teacher_and_student_enrolled(active_all: true)
     @other_course = course_factory(active_all: true)
+    @course.root_account.enable_feature!(:text_clips)
   end
 
   def create_clip_for(user, course, content)
@@ -653,6 +654,32 @@ describe TextClipsController do
         expect(response).to be_successful
         expect(json_parse(response.body)["token"]).to be_present
       end
+    end
+  end
+
+  context "text_clips feature flag disabled" do
+    before do
+      user_session(@teacher)
+      @course.root_account.disable_feature!(:text_clips)
+    end
+
+    after do
+      @course.root_account.enable_feature!(:text_clips)
+    end
+
+    it "has the feature disabled on the domain root account" do
+      expect(Account.default.feature_enabled?(:text_clips)).to be false
+      expect(@course.root_account.feature_enabled?(:text_clips)).to be false
+    end
+
+    it "returns not found for index" do
+      get :index, format: :json, params: {course_id: @course.id}
+      expect(response).to be_not_found
+    end
+
+    it "returns not found for create" do
+      post :create, format: :json, params: {course_id: @course.id, content: "blocked"}
+      expect(response).to be_not_found
     end
   end
 end

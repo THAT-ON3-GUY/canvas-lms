@@ -634,6 +634,7 @@ class ApplicationController < ActionController::Base
     widget_dashboard
     default_discussion_options
     course_navigation_and_feature_options_permissions
+    text_clips
   ].freeze
   JS_ENV_ROOT_ACCOUNT_SERVICES = %i[account_survey_notifications].freeze
   JS_ENV_BRAND_ACCOUNT_FEATURES = %i[

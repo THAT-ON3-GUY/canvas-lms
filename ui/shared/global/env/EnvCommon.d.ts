@@ -383,6 +383,7 @@ export type RootAccountFeatureId =
   | 'send_usage_metrics'
   | 'substitution_variable_display'
   | 'send_usage_metrics_after_consent'
+  | 'text_clips'
   | 'top_navigation_placement'
   | 'course_navigation_and_feature_options_permissions'
 

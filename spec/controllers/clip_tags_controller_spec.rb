@@ -21,6 +21,7 @@
 describe ClipTagsController do
   before :once do
     course_with_teacher_and_student_enrolled(active_all: true)
+    @course.root_account.enable_feature!(:text_clips)
     @teacher_tag = ClipTag.create!(
       user_id: @teacher.id,
       name: "Teacher tag",

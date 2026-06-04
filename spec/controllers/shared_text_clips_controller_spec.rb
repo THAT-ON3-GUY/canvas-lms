@@ -59,5 +59,14 @@ describe SharedTextClipsController do
       get :show, params: { token: @share.token }, format: :json
       expect(response).to have_http_status(:not_found)
     end
+
+    it "still serves anonymous viewers when text_clips is disabled on the account" do
+      @course.root_account.disable_feature!(:text_clips)
+      get :show, params: {token: @share.token}, format: :json
+      expect(response).to be_successful
+      expect(json_parse(response.body)["content"]).to eq "Public clip body"
+    ensure
+      @course.root_account.enable_feature!(:text_clips)
+    end
   end
 end

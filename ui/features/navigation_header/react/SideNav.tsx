@@ -204,16 +204,20 @@ const SideNav: React.FC<ISideNav> = ({externalTools = []}) => {
     persister: sessionStoragePersister.persisterFn,
   })
 
+  const textClipsEnabled = Boolean(ENV.FEATURES?.text_clips)
+
   useEffect(() => {
+    if (!textClipsEnabled) return
     if (sessionStorage.getItem('text_clips_tray_open') === '1') {
       dispatch({type: 'SET_ACTIVE_TRAY', payload: 'textClips'})
     }
-  }, [])
+  }, [textClipsEnabled])
 
   useEffect(() => {
+    if (!textClipsEnabled) return
     const open = activeTray === 'textClips' && isTrayOpen
     sessionStorage.setItem('text_clips_tray_open', open ? '1' : '0')
-  }, [isTrayOpen, activeTray])
+  }, [isTrayOpen, activeTray, textClipsEnabled])
 
   useLayoutEffect(() => {
     const collapseDiv = document.querySelectorAll('[aria-label="Main navigation"]')[0]
@@ -471,22 +475,24 @@ const SideNav: React.FC<ISideNav> = ({externalTools = []}) => {
             )
           })}
 
-          <SideNavBar.Item
-            id="text-clips-tray"
-            icon={<IconBookmarkLine />}
-            label={I18n.t('Text clips')}
-            href="#"
-            onClick={event => {
-              event.preventDefault()
-              handleActiveTray('textClips', true)
-            }}
-            selected={selectedNavItem === 'textClips'}
-            data-selected={selectedNavItem === 'textClips'}
-            themeOverride={{
-              fontWeight: 400,
-            }}
-            minimized={collapseSideNav}
-          />
+          {textClipsEnabled && (
+            <SideNavBar.Item
+              id="text-clips-tray"
+              icon={<IconBookmarkLine />}
+              label={I18n.t('Text clips')}
+              href="#"
+              onClick={event => {
+                event.preventDefault()
+                handleActiveTray('textClips', true)
+              }}
+              selected={selectedNavItem === 'textClips'}
+              data-selected={selectedNavItem === 'textClips'}
+              themeOverride={{
+                fontWeight: 400,
+              }}
+              minimized={collapseSideNav}
+            />
+          )}
 
           <SideNavBar.Item
             id="help-tray"
@@ -580,7 +586,7 @@ const SideNav: React.FC<ISideNav> = ({externalTools = []}) => {
                     closeTray={() => dispatch({type: 'SET_IS_TRAY_OPEN', payload: false})}
                   />
                 )}
-                {activeTray === 'textClips' && <TextClipsTray />}
+                {textClipsEnabled && activeTray === 'textClips' && <TextClipsTray />}
               </React.Suspense>
             </div>
           </div>

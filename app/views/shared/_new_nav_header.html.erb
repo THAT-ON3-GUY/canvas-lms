@@ -223,7 +223,7 @@
       <% unless @current_user.nil? %>
         <%= render(partial: 'external_tools/global_nav_menu_items') %>
       <% end %>
-      <% if @current_user %>
+      <% if @current_user && @domain_root_account&.feature_enabled?(:text_clips) %>
         <li class="menu-item ic-app-header__menu-list-item">
           <a id="global_nav_text_clips_link" role="button" href="#" class="ic-app-header__menu-list-link">
             <div class="menu-item-icon-container" aria-hidden="true">

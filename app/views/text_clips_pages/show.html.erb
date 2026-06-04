@@ -17,6 +17,6 @@
 %>
 <%
   provide :page_title, t("text_clips.Text clips")
-  js_bundle :text_clips_page
+  js_bundle :text_clips_page if @domain_root_account&.feature_enabled?(:text_clips)
 %>
 <div id="text_clips_page_mount"></div>

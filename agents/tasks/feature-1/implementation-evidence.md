@@ -15,7 +15,7 @@
 | https://github.com/THAT-ON3-GUY/canvas-lms/pull/25 | **Slice 8 — Full-page /text_clips:** `TextClipsPagesController`, `text_clips_page` bundle, reuses `TextClipsTray` in global mode, “View all clips” tray link. Merge: `cf75128c12e`. |
 | https://github.com/THAT-ON3-GUY/canvas-lms/pull/26 | **Slice 9 — Highlight restore:** `highlightRestore.ts`, source links carry `#text_clip_highlight=`, bundle retries on page load. Frontend-only. Merge: `751a8a30c8c`. |
 | https://github.com/THAT-ON3-GUY/canvas-lms/pull/27 | **Slice 10 — Pin & sort:** `pinned_at` column, `ordered` scope, tray sort select + pin button. Merge: `668650a4277`. |
-| https://github.com/THAT-ON3-GUY/canvas-lms/pull/28 | **Slice 11 — Rich-content clipping:** `content_html` column, sanitized HTML capture + render in tray/shared view. |
+| https://github.com/THAT-ON3-GUY/canvas-lms/pull/28 | **Slice 11 — Rich-content clipping:** `content_html` column, sanitized HTML capture + render in tray/shared view. Merge: `98894f4787c`. |
 
 ## Board: item titles and status timeline
 

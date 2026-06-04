@@ -285,7 +285,7 @@ docker compose run --rm web bin/rubocop app/models/text_clip*.rb app/controllers
 
 | Item | Detail |
 |------|--------|
-| PR | [#28](https://github.com/THAT-ON3-GUY/canvas-lms/pull/28) |
+| PR | [#28](https://github.com/THAT-ON3-GUY/canvas-lms/pull/28) — merge `98894f4787c` |
 | UX | Clipping bold/links/lists preserves formatting in tray, full page, and shared link |
 | API | `POST/PUT` accepts `content_html`; JSON includes sanitized `content_html` |
 

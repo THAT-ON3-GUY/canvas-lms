@@ -61,6 +61,7 @@ import {
   updateGlobalTextClip,
   updateTextClip,
 } from '../../../text_clips/api'
+import {buildCitation, copyClipContent, copyPlainText} from '../../../text_clips/clipCopy'
 import {sourceUrlWithHighlight} from '../../../text_clips/highlightRestore'
 import {CLIP_TAG_PALETTE, CLIP_TAG_THEME} from '../../../text_clips/tagColors'
 import type {
@@ -144,6 +145,8 @@ type TextClipListItemProps = {
   onCreateShare: () => void
   onRevokeShare: () => void
   onCopyShareLink: (url: string) => void
+  onCopyClip: (clip: TextClipRecord) => void
+  onCopyCitation: (clip: TextClipRecord) => void
   isSaving: boolean
   isDeleting: boolean
   isPinning: boolean
@@ -168,6 +171,8 @@ function TextClipListItem({
   onCreateShare,
   onRevokeShare,
   onCopyShareLink,
+  onCopyClip,
+  onCopyCitation,
   isSaving,
   isDeleting,
   isPinning,
@@ -314,6 +319,24 @@ function TextClipListItem({
                   <IconExternalLinkLine size="x-small" style={{paddingLeft: '0.3em'}} />
                 </Link>
               )}
+              <IconButton
+                size="small"
+                margin="0 x-small 0 0"
+                screenReaderLabel={I18n.t('Copy clip')}
+                renderIcon={IconCopyLine}
+                data-testid={`text-clip-copy-${clip.id}`}
+                onClick={() => onCopyClip(clip)}
+                interaction={isDeleting || isPinning || isSharing ? 'disabled' : 'enabled'}
+              />
+              <IconButton
+                size="small"
+                margin="0 x-small 0 0"
+                screenReaderLabel={I18n.t('Copy with citation')}
+                renderIcon={IconCopyLine}
+                data-testid={`text-clip-copy-citation-${clip.id}`}
+                onClick={() => onCopyCitation(clip)}
+                interaction={isDeleting || isPinning || isSharing ? 'disabled' : 'enabled'}
+              />
               <IconButton
                 size="small"
                 margin="0 x-small 0 0"
@@ -675,6 +698,24 @@ export default function TextClipsTray({showViewAllLink = true}: TextClipsTrayPro
     }
   }, [])
 
+  const copyClip = useCallback(async (clip: TextClipRecord) => {
+    try {
+      await copyClipContent(clip)
+      showFlashAlert({message: I18n.t('Copied to clipboard'), type: 'success'})
+    } catch (_e) {
+      showFlashAlert({message: I18n.t('Could not copy to clipboard'), type: 'error'})
+    }
+  }, [])
+
+  const copyCitation = useCallback(async (clip: TextClipRecord) => {
+    try {
+      await copyPlainText(buildCitation(clip))
+      showFlashAlert({message: I18n.t('Citation copied'), type: 'success'})
+    } catch (_e) {
+      showFlashAlert({message: I18n.t('Could not copy to clipboard'), type: 'error'})
+    }
+  }, [])
+
   const startEdit = (clip: TextClipRecord) => {
     setEditingId(clip.id)
     setEditDraft({
@@ -971,6 +1012,8 @@ export default function TextClipsTray({showViewAllLink = true}: TextClipsTrayPro
                 onCreateShare={() => shareMutation.mutate(clip.id)}
                 onRevokeShare={() => unshareMutation.mutate(clip.id)}
                 onCopyShareLink={copyShareLink}
+                onCopyClip={copyClip}
+                onCopyCitation={copyCitation}
                 isSaving={updateMutation.isPending}
                 isDeleting={deleteMutation.isPending}
                 isPinning={togglePinMutation.isPending}

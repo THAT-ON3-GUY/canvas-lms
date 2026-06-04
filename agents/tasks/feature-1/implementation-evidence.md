@@ -16,6 +16,7 @@
 | https://github.com/THAT-ON3-GUY/canvas-lms/pull/26 | **Slice 9 — Highlight restore:** `highlightRestore.ts`, source links carry `#text_clip_highlight=`, bundle retries on page load. Frontend-only. Merge: `751a8a30c8c`. |
 | https://github.com/THAT-ON3-GUY/canvas-lms/pull/27 | **Slice 10 — Pin & sort:** `pinned_at` column, `ordered` scope, tray sort select + pin button. Merge: `668650a4277`. |
 | https://github.com/THAT-ON3-GUY/canvas-lms/pull/28 | **Slice 11 — Rich-content clipping:** `content_html` column, sanitized HTML capture + render in tray/shared view. Merge: `98894f4787c`. |
+| https://github.com/THAT-ON3-GUY/canvas-lms/pull/29 | **Slice 12 — Quick copy & cite:** `clipCopy.ts`, Copy + Copy citation buttons in tray. |
 
 ## Board: item titles and status timeline
 
@@ -235,3 +236,14 @@ Multi-tag filter unchanged (OR via `tag_ids[]`). Pin toggle uses existing PUT; n
 ### Trace
 
 Edit mode stays plain text; saving content without `content_html` clears stored HTML. Backward compatible for existing clips.
+
+## Slice 12 — Quick copy & cite
+
+### Scope delivered
+
+- **Module:** [`ui/features/text_clips/clipCopy.ts`](../../../ui/features/text_clips/clipCopy.ts) — `buildCitation`, `copyPlainText`, `copyClipContent` (rich HTML via ClipboardItem when available)
+- **Tray:** Copy and Copy with citation `IconButton`s on each clip row; success/error flashes
+
+### Trace
+
+Frontend-only; no API or migration. Full page inherits via `TextClipsTray`.

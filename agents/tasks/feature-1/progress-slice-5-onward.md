@@ -291,6 +291,15 @@ docker compose run --rm web bin/rubocop app/models/text_clip*.rb app/controllers
 
 **Manual check:** Clip formatted text → tray shows HTML; share link renders formatting; edit plain text → rich view clears.
 
+## Slice 12 — Quick copy & cite (2026-06-04)
+
+| Item | Detail |
+|------|--------|
+| PR | [#29](https://github.com/THAT-ON3-GUY/canvas-lms/pull/29) |
+| UX | **Copy** clip (plain or rich HTML); **Copy with citation** (text + source) |
+
+**Manual check:** Copy → paste content; Copy with citation → paste includes source line.
+
 ## What is not done yet (project backlog)
 
 Per [`agents/project-creation.md`](../../project-creation.md):
@@ -308,4 +317,4 @@ Per [`agents/project-creation.md`](../../project-creation.md):
 
 ---
 
-*Last updated: 2026-06-04 — Slice 11 rich-content clipping.*
+*Last updated: 2026-06-04 — Slice 12 quick copy & cite.*

@@ -275,7 +275,7 @@ docker compose run --rm web bin/rubocop app/models/text_clip*.rb app/controllers
 
 | Item | Detail |
 |------|--------|
-| PR | [#27](https://github.com/THAT-ON3-GUY/canvas-lms/pull/27) |
+| PR | [#27](https://github.com/THAT-ON3-GUY/canvas-lms/pull/27) — merge `668650a4277` |
 | UX | **Pin** clip to top (tray + `/text_clips`); **Sort** Recent / Oldest / Source |
 | API | `GET .../text_clips?sort=oldest|source`; `PUT` with `pinned: true/false` |
 

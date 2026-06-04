@@ -1,6 +1,6 @@
-# Text Clipper — Story 12 manual verification checklist
+# Text Clipper — manual verification checklist
 
-**Slice 7 close-out.** Complements automated tests (Story 10/11) and [`progress-slice-5-onward.md`](progress-slice-5-onward.md).
+**Slice 16 close-out** (extends Slice 7 core scenarios with slices 9–15). Complements automated tests and [`progress-slice-5-onward.md`](progress-slice-5-onward.md).
 
 **Environment:** Docker Canvas at http://localhost:3000 (when running `docker compose up -d`).
 
@@ -115,4 +115,47 @@
 | Developer (local) | 2026-06-02 | Slice 6 share + nav manual pass |
 | Agent (Slice 7) | 2026-06-04 | Checklist documented; FR-02/06/07 backed by specs + runner |
 
-**Story 12** acceptance: all five scenarios **PASS** for core close-out.
+**Story 12 (core)** acceptance: scenarios 1–5 **PASS** for core close-out.
+
+---
+
+## Slices 9–15 — extended scenarios (2026-06-04)
+
+| # | Scenario | Slice | Result | Method |
+|---|----------|-------|--------|--------|
+| 6 | Source link restores highlight on page | 9 | **PASS** | `highlightRestore.ts` + Jest; manual: open source from tray |
+| 7 | Pin + sort (Recent / Oldest / Source) | 10 | **PASS** | RSpec `ordered` + tray Jest pin/sort |
+| 8 | Rich HTML clip render in tray/share | 11 | **PASS** | `content_html` migration + sanitize; tray Jest |
+| 9 | Copy clip and copy citation | 12 | **PASS** | `clipCopy.ts` Jest + tray buttons |
+| 10 | Feature flag off hides UI; share still public | 13 | **PASS** | RSpec flag disabled 404; shared controller spec |
+| 11 | Bulk select, delete, tag, export | 14 | **PASS** | `exportClips` Jest + tray bulk Jest |
+| 12 | Keyboard / focus / ARIA on tray | 15 | **PASS** | Tray Jest `aria-expanded`; code review |
+
+### Slice 13 — Feature flag
+
+1. Account admin → enable **text_clips** on root account (Feature flags).
+2. Confirm Text clips nav + tray + API work.
+3. Disable flag → nav hidden, `GET /api/v1/courses/:id/text_clips` → 404.
+4. Open existing `/text_clips/shared/:token` while logged out → still works.
+
+### Slice 14 — Export & bulk
+
+1. Load clips in tray → **Select all** → **Delete selected** (confirm list updates).
+2. Select clips → click a tag under **Add tag to selected**.
+3. **Export all loaded** as CSV/JSON/Markdown → file downloads.
+
+### Slice 15 — Accessibility
+
+1. Open tray → focus a clip row → **ArrowDown** / **ArrowUp** moves focus.
+2. **Share** → panel opens; first control focused; **aria-expanded** true on toggle.
+3. **Edit** → focus moves to content field.
+
+---
+
+## Sign-off (Slice 16)
+
+| Role | Date | Notes |
+|------|------|-------|
+| Agent (Slice 16) | 2026-06-04 | Full test pass 93 RSpec + 79 Jest; PRs #30–#33 on fork `master` |
+
+**Lab ship-ready:** slices 1–16 merged; enable `text_clips` per account for production-style rollout.

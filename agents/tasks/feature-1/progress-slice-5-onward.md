@@ -300,11 +300,43 @@ docker compose run --rm web bin/rubocop app/models/text_clip*.rb app/controllers
 
 **Manual check:** Copy → paste content; Copy with citation → paste includes source line.
 
-## What is not done yet (project backlog)
+## Slice 13 — Feature-flag rollout (2026-06-04)
 
-Per [`agents/project-creation.md`](../../project-creation.md):
-- Production hardening, feature flag rollout, instructor board alignment via GitHub UI
-- Polish / bug-fix slice (explicitly out of scope for Slice 7)
+| Item | Detail |
+|------|--------|
+| PR | [#30](https://github.com/THAT-ON3-GUY/canvas-lms/pull/30) — merge `65910ea716e` |
+| Flag | Account `text_clips` (hidden; enable per account in dev/ci) |
+| Gate | API, `/text_clips` page, clip tags, bundles, SideNav/classic nav |
+
+**Manual check:** Disable flag on account → nav hidden, API 404; shared URL still loads anonymously.
+
+## Slice 14 — Export & bulk (2026-06-04)
+
+| Item | Detail |
+|------|--------|
+| PR | [#31](https://github.com/THAT-ON3-GUY/canvas-lms/pull/31) — merge `9efa22173b1` |
+| UX | Select clips → bulk delete or add tag; export Markdown/CSV/JSON |
+
+**Manual check:** Select two clips → bulk delete; export all loaded as CSV downloads.
+
+## Slice 15 — Accessibility (2026-06-04)
+
+| Item | Detail |
+|------|--------|
+| PR | [#32](https://github.com/THAT-ON3-GUY/canvas-lms/pull/32) — merge `b7161d8663a` |
+| UX | Arrow keys between rows; share panel focus; screen reader labels |
+
+**Manual check:** Keyboard-only: open tray, move between rows, open share, Tab through panel.
+
+## Slice 16 — Lab close-out (2026-06-04)
+
+| Item | Detail |
+|------|--------|
+| PR | [#33](https://github.com/THAT-ON3-GUY/canvas-lms/pull/33) |
+| Docs | `manual-verification-checklist.md` slices 9–15; evidence sync |
+| Tests | **93 RSpec**, **79 Jest**, `yarn check:ts` — 0 failures |
+
+**Status:** Slices 1–16 complete on fork `master` for lab ship-ready sign-off.
 
 ---
 
@@ -317,4 +349,4 @@ Per [`agents/project-creation.md`](../../project-creation.md):
 
 ---
 
-*Last updated: 2026-06-04 — Slice 12 quick copy & cite.*
+*Last updated: 2026-06-04 — Slice 16 lab close-out (slices 13–16 merged).*

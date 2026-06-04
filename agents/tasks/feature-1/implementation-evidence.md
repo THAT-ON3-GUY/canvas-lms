@@ -17,6 +17,10 @@
 | https://github.com/THAT-ON3-GUY/canvas-lms/pull/27 | **Slice 10 — Pin & sort:** `pinned_at` column, `ordered` scope, tray sort select + pin button. Merge: `668650a4277`. |
 | https://github.com/THAT-ON3-GUY/canvas-lms/pull/28 | **Slice 11 — Rich-content clipping:** `content_html` column, sanitized HTML capture + render in tray/shared view. Merge: `98894f4787c`. |
 | https://github.com/THAT-ON3-GUY/canvas-lms/pull/29 | **Slice 12 — Quick copy & cite:** `clipCopy.ts`, Copy + Copy citation buttons in tray. Merge: `956e1d0167d`. |
+| https://github.com/THAT-ON3-GUY/canvas-lms/pull/30 | **Slice 13 — Feature-flag rollout:** `text_clips` account flag; API/pages/tags gated; anonymous shares unchanged. Merge: `65910ea716e`. |
+| https://github.com/THAT-ON3-GUY/canvas-lms/pull/31 | **Slice 14 — Export & bulk:** multi-select, bulk delete/tag, Markdown/CSV/JSON export. Merge: `9efa22173b1`. |
+| https://github.com/THAT-ON3-GUY/canvas-lms/pull/32 | **Slice 15 — Accessibility:** keyboard row nav, edit/share focus, ARIA on toolbar and share toggle. Merge: `b7161d8663a`. |
+| https://github.com/THAT-ON3-GUY/canvas-lms/pull/33 | **Slice 16 — Lab close-out:** manual checklist slices 9–15, evidence sync, full test pass. |
 
 ## Board: item titles and status timeline
 
@@ -247,3 +251,31 @@ Edit mode stays plain text; saving content without `content_html` clears stored 
 ### Trace
 
 Frontend-only; no API or migration. Full page inherits via `TextClipsTray`.
+
+## Slice 13 — Feature-flag rollout
+
+### Scope delivered
+
+- **Flag:** [`config/feature_flags/text_clips_flags.yml`](../../../config/feature_flags/text_clips_flags.yml) — `text_clips`, `applies_to: Account`, hidden; dev/ci `allowed_on`
+- **Gate:** [`TextClipsFeature`](../../../app/controllers/concerns/text_clips_feature.rb) on API, pages, clip tags; bundles and nav; `ENV.FEATURES.text_clips`
+- **Shares:** [`SharedTextClipsController`](../../../app/controllers/shared_text_clips_controller.rb) unchanged (anonymous links work when flag off)
+
+## Slice 14 — Export & bulk actions
+
+### Scope delivered
+
+- **Export:** [`ui/features/text_clips/exportClips.ts`](../../../ui/features/text_clips/exportClips.ts) — Markdown, CSV, JSON client download
+- **Tray:** Multi-select, bulk delete (parallel DELETE), bulk tag (merge `tag_ids`), export selected or all loaded clips
+
+## Slice 15 — Accessibility & polish
+
+### Scope delivered
+
+- Keyboard **ArrowUp/ArrowDown** between clip rows; focus on edit textarea and share panel controls
+- `aria-expanded` on share toggle; `role="toolbar"` bulk bar; labeled clip list and selection button group
+
+## Slice 16 — Lab close-out
+
+### Scope delivered
+
+- Manual checklist extended for slices 9–15; evidence docs updated; ship-ready test pass (**93 RSpec**, **79 Jest**, `yarn check:ts`)

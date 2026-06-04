@@ -17,6 +17,10 @@
 | **Slice 10** — Pin & sort | https://github.com/THAT-ON3-GUY/canvas-lms/pull/27 | `pinned_at` migration, `ordered` scope, tray sort + pin UI | `bin/rspec spec/controllers/text_clips_controller_spec.rb spec/models/text_clip_spec.rb`; `yarn test` text_clips + tray; `yarn check:ts` | **67 RSpec**, **57 Jest**, 0 failures | Merge: https://github.com/THAT-ON3-GUY/canvas-lms/commit/668650a4277e7d06987c8c7877bcf31aab68d6e4 |
 | **Slice 11** — Rich-content clipping | https://github.com/THAT-ON3-GUY/canvas-lms/pull/28 | `content_html` migration, sanitize_field, capture + tray/shared render | `bin/rspec` + `yarn test` text_clips + tray; `yarn check:ts` | **70 RSpec**, **61 Jest**, 0 failures | Merge: https://github.com/THAT-ON3-GUY/canvas-lms/commit/98894f4787cad5fda07f0ff11eff8bac4c3ef3b8 |
 | **Slice 12** — Quick copy & cite | https://github.com/THAT-ON3-GUY/canvas-lms/pull/29 | `clipCopy.ts`, tray copy buttons | `yarn test` text_clips + tray; `yarn check:ts` | **72 Jest**, 0 failures | Merge: https://github.com/THAT-ON3-GUY/canvas-lms/commit/956e1d0167d64ec2223f3811aa87f2e0bb40d25b |
+| **Slice 13** — Feature-flag rollout | https://github.com/THAT-ON3-GUY/canvas-lms/pull/30 | `text_clips_flags.yml`, `TextClipsFeature`, nav/bundle gating | `bin/rspec` text_clips* clip_tags* shared_text_clips*; `yarn check:ts` | **63 RSpec** (controller), 0 failures | Merge: `65910ea716e` |
+| **Slice 14** — Export & bulk | https://github.com/THAT-ON3-GUY/canvas-lms/pull/31 | `exportClips.ts`, tray bulk select/delete/tag/export | `yarn test` exportClips + TextClipsTray; `yarn check:ts` | **33 Jest** tray+export, 0 failures | Merge: `9efa22173b1` |
+| **Slice 15** — Accessibility polish | https://github.com/THAT-ON3-GUY/canvas-lms/pull/32 | Keyboard/focus/ARIA in tray + selection button | `yarn test` TextClipsTray; `yarn check:ts` | **30 Jest** tray, 0 failures | Merge: `b7161d8663a` |
+| **Slice 16** — Lab close-out | https://github.com/THAT-ON3-GUY/canvas-lms/pull/33 | Checklist slices 9–15; evidence finalization | Full pass: **93 RSpec**, **79 Jest**, `yarn check:ts` | 0 failures | (this PR) |
 
 ## Board / issue timeline (#2)
 
@@ -166,3 +170,48 @@ Manual checklist: [`manual-verification-checklist.md`](manual-verification-check
 | When (UTC) | Status | Method |
 |------------|--------|--------|
 | 2026-06-04 | Done | PR #29 squash-merged to `master` |
+
+## Slice 13 QA (feature-flag rollout)
+
+| Command | Outcome |
+|---------|---------|
+| `docker compose run --rm web bin/rspec spec/controllers/text_clips_controller_spec.rb spec/controllers/text_clips_pages_controller_spec.rb spec/controllers/clip_tags_controller_spec.rb spec/controllers/shared_text_clips_controller_spec.rb` | **63 examples, 0 failures** |
+| `docker compose run --rm web yarn check:ts` | pass |
+
+| When (UTC) | Status | Method |
+|------------|--------|--------|
+| 2026-06-04 | Done | PR #30 — merge `65910ea716e` |
+
+## Slice 14 QA (export & bulk)
+
+| Command | Outcome |
+|---------|---------|
+| `docker compose run --rm web yarn test ui/features/text_clips ui/features/navigation_header/react/trays/__tests__/TextClipsTray.test.tsx` | **79 tests, 0 failures** (includes exportClips) |
+| `docker compose run --rm web yarn check:ts` | pass |
+
+| When (UTC) | Status | Method |
+|------------|--------|--------|
+| 2026-06-04 | Done | PR #31 — merge `9efa22173b1` |
+
+## Slice 15 QA (accessibility)
+
+| Command | Outcome |
+|---------|---------|
+| `docker compose run --rm web yarn test ui/features/navigation_header/react/trays/__tests__/TextClipsTray.test.tsx` | includes `aria-expanded` example |
+| `docker compose run --rm web yarn check:ts` | pass |
+
+| When (UTC) | Status | Method |
+|------------|--------|--------|
+| 2026-06-04 | Done | PR #32 — merge `b7161d8663a` |
+
+## Slice 16 QA (lab close-out)
+
+| Command | Outcome |
+|---------|---------|
+| `docker compose run --rm web bin/rspec spec/models/text_clip_spec.rb spec/models/text_clip_share_spec.rb spec/controllers/text_clips_controller_spec.rb spec/controllers/text_clips_pages_controller_spec.rb spec/controllers/clip_tags_controller_spec.rb spec/controllers/shared_text_clips_controller_spec.rb` | **93 examples, 0 failures** |
+| `docker compose run --rm web yarn test ui/features/text_clips ui/features/text_clips_page ui/features/navigation_header/react/trays/__tests__/TextClipsTray.test.tsx` | **79 tests, 0 failures** |
+| `docker compose run --rm web yarn check:ts` | pass |
+
+| When (UTC) | Status | Method |
+|------------|--------|--------|
+| 2026-06-04 | Done | PR #33 (docs + verification) |

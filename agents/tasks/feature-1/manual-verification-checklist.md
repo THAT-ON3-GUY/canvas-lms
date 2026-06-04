@@ -158,4 +158,4 @@
 |------|------|-------|
 | Agent (Slice 16) | 2026-06-04 | Full test pass 93 RSpec + 79 Jest; PRs #30–#33 on fork `master` |
 
-**Lab ship-ready:** slices 1–16 merged; enable `text_clips` per account for production-style rollout.
+**Lab ship-ready:** slices 1–16 merged; `text_clips` is on by default per account (`allowed_on`); disable via account feature flags to test gating.

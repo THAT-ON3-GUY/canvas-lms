@@ -256,7 +256,7 @@ Frontend-only; no API or migration. Full page inherits via `TextClipsTray`.
 
 ### Scope delivered
 
-- **Flag:** [`config/feature_flags/text_clips_flags.yml`](../../../config/feature_flags/text_clips_flags.yml) — `text_clips`, `applies_to: Account`, hidden; dev/ci `allowed_on`
+- **Flag:** [`config/feature_flags/text_clips_flags.yml`](../../../config/feature_flags/text_clips_flags.yml) — `text_clips`, `applies_to: Account`, `allowed_on` by default (all environments)
 - **Gate:** [`TextClipsFeature`](../../../app/controllers/concerns/text_clips_feature.rb) on API, pages, clip tags; bundles and nav; `ENV.FEATURES.text_clips`
 - **Shares:** [`SharedTextClipsController`](../../../app/controllers/shared_text_clips_controller.rb) unchanged (anonymous links work when flag off)
 

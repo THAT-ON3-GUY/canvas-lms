@@ -10,6 +10,8 @@
 | https://github.com/THAT-ON3-GUY/canvas-lms/pull/19 | **Stories 3–4:** `TextClipsController` (`index`, `create`, `destroy`), course-nested API routes under `/api/v1/courses/:course_id/text_clips`, `has_many :text_clips` on `User`; partial Story 10 controller specs. |
 | https://github.com/THAT-ON3-GUY/canvas-lms/pull/21 | **Slice 5 — Global clips view:** `/api/v1/users/self/text_clips`, global SideNav + tray mode, off-course selection clip (`course_id: nil`), layout bundle for all logged-in pages, `for_courses` scope, course stub in JSON. Refs #5, #7, #8, #9, #16; more Story 10 coverage. |
 | https://github.com/THAT-ON3-GUY/canvas-lms/pull/22 | **Slice 6 — Read-only share links:** `text_clip_shares`, owner `POST/DELETE .../share`, anonymous `GET /text_clips/shared/:token`, tray share UI (create/copy/revoke). Refs #5, #7, #10, #11. |
+| https://github.com/THAT-ON3-GUY/canvas-lms/pull/23 | **Nav + progress doc:** classic nav Text clips entry, OldSideNav tray, InstUI header mount, `progress-slice-5-onward.md`. Merge `4b1ada9aebb`. |
+| https://github.com/THAT-ON3-GUY/canvas-lms/pull/24 | **Slice 7 — Core close-out:** `TextClipsSelectionRoot` Jest (FR-01/FR-07), index newest-first RSpec, Story 12 manual checklist, closed issues #5–#16. Closes #10, #11, #12. |
 
 ## Board: item titles and status timeline
 
@@ -120,7 +122,7 @@ Details and step-by-step checklist: [`progress-slice-5-onward.md`](progress-slic
 
 ## Post-merge dev session (2026-06-02) — nav + Docker
 
-Not merged to `master` as of last evidence update; tracked for the next PR.
+Merged in **PR #23** (`4b1ada9aebb`).
 
 ### Problem
 
@@ -154,3 +156,25 @@ docker compose restart web
 ```
 
 **Verified:** Text clips visible in left nav; Slice 6 share manual checklist passed. Full write-up: [`progress-slice-5-onward.md`](progress-slice-5-onward.md).
+
+## Slice 7 — Core close-out (testing + Story 12 + issues)
+
+### Scope delivered
+
+- **Jest:** [`TextClipsSelectionRoot.test.tsx`](../../../ui/features/text_clips/__tests__/TextClipsSelectionRoot.test.tsx) — course vs global save, error path, FR-07 editor suppression.
+- **RSpec:** `GET #index` returns clips **newest first** (`travel_to` example in `text_clips_controller_spec.rb`).
+- **Manual:** [`manual-verification-checklist.md`](manual-verification-checklist.md) — all five Story 12 scenarios **PASS** (2026-06-04).
+- **Issues:** Closed **#5–#16** on `THAT-ON3-GUY/canvas-lms` with PR traceability comments (#1–#4 were already closed).
+
+### Board / issues
+
+| Item | Notes |
+|------|--------|
+| **#10** RSpec | Model, controller, share, tag specs complete |
+| **#11** Jest | Tray, selection root, SelectionClipButton, api |
+| **#12** Manual checklist | Documented and signed off |
+| **#5–#9, #13–#16** | Shipped in slices 2–6 + PR #23; closed with comments |
+
+### Trace
+
+Closes the original **Testing & Verification** milestone and FR-01–FR-07 acceptance without new product scope. Deferred: feature-flag rollout, `/text_clips` page, polish slice.

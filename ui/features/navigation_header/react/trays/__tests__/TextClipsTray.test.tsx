@@ -60,6 +60,7 @@ describe('TextClipsTray', () => {
   const oldCourseId = window.ENV.COURSE_ID
 
   beforeAll(() => {
+    window.ENV.FEATURES = {...window.ENV.FEATURES, text_clips: true}
     server.listen()
     server.use(http.get('*/api/v1/users/self/clip_tags', () => HttpResponse.json([])))
   })

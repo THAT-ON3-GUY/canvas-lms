@@ -66,13 +66,15 @@ type ActiveItem =
   | 'help'
   | null
 
+const textClipsEnabled = Boolean(window.ENV.FEATURES?.text_clips)
+
 const itemsWithResources = [
   'courses',
   'groups',
   'accounts',
   'profile',
   'history',
-  'text_clips',
+  ...(textClipsEnabled ? (['text_clips'] as const) : []),
   'help',
 ] as const
 
@@ -244,7 +246,7 @@ const Navigation = () => {
               {type === 'accounts' && <AccountsTray />}
               {type === 'profile' && <ProfileTray />}
               {type === 'history' && <HistoryTray />}
-              {type === 'text_clips' && <TextClipsTray />}
+              {textClipsEnabled && type === 'text_clips' && <TextClipsTray />}
               {type === 'help' && <HelpTray closeTray={closeTray} />}
             </React.Suspense>
           </div>

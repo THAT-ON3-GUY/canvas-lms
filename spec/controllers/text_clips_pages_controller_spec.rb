@@ -21,6 +21,7 @@
 describe TextClipsPagesController do
   before :once do
     course_with_teacher(active_all: true)
+    @course.root_account.enable_feature!(:text_clips)
   end
 
   describe "GET #show" do
@@ -36,6 +37,15 @@ describe TextClipsPagesController do
       expect(response).to be_successful
       expect(response).to render_template(:show)
       expect(response.body).to include('id="text_clips_page_mount"')
+    end
+
+    it "returns not found when the feature flag is disabled" do
+      @course.root_account.disable_feature!(:text_clips)
+      user_session(@teacher)
+      get :show
+      expect(response).to be_not_found
+    ensure
+      @course.root_account.enable_feature!(:text_clips)
     end
   end
 end

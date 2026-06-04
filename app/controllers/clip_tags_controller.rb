@@ -24,6 +24,7 @@
 #
 class ClipTagsController < ApplicationController
   include Api::V1::ClipTag
+  include TextClipsFeature
 
   before_action :require_user
 

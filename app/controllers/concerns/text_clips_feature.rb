@@ -18,14 +18,16 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-class TextClipsPagesController < ApplicationController
-  include TextClipsFeature
+module TextClipsFeature
+  extend ActiveSupport::Concern
 
-  before_action :require_user
+  included do
+    before_action :require_text_clips_feature
+  end
 
-  def show
-    @page_title = t("text_clips.Text clips")
-    add_crumb @page_title, text_clips_page_path
-    render :show
+  private
+
+  def require_text_clips_feature
+    not_found unless @domain_root_account&.feature_enabled?(:text_clips)
   end
 end

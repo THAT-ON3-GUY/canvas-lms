@@ -24,6 +24,7 @@
 #
 class TextClipsController < ApplicationController
   include Api::V1::TextClip
+  include TextClipsFeature
 
   before_action :require_user
   before_action :load_clip_context

@@ -71,7 +71,7 @@
   <%= render_datadog_rum_js %>
   <script>if (navigator.userAgent.match(/(MSIE|Trident\/)/)) location.replace('/ie-is-not-supported.html')</script>
   <% js_bundle :navigation_header unless @headers == false %>
-  <% js_bundle :text_clips if @context.is_a?(Course) && @current_user %>
+  <% js_bundle :text_clips if @context.is_a?(Course) && @current_user && @domain_root_account&.feature_enabled?(:text_clips) %>
   <% js_env({ active_context_tab: get_active_tab }) %>
   <script>
     INST = <%= benchmark("rendering INST") { raw(inst_env.to_json) } %>;

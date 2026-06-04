@@ -16,6 +16,7 @@
 | **Slice 9** — Highlight restore | https://github.com/THAT-ON3-GUY/canvas-lms/pull/26 | `highlightRestore.ts`, bundle hook, tray source href fragment | `yarn test ui/features/text_clips ui/features/navigation_header/react/trays/__tests__/TextClipsTray.test.tsx`; `yarn check:ts` | **54 Jest**, 0 failures | Merge: https://github.com/THAT-ON3-GUY/canvas-lms/commit/751a8a30c8cd83141c5463880589d4fbbd74df74 |
 | **Slice 10** — Pin & sort | https://github.com/THAT-ON3-GUY/canvas-lms/pull/27 | `pinned_at` migration, `ordered` scope, tray sort + pin UI | `bin/rspec spec/controllers/text_clips_controller_spec.rb spec/models/text_clip_spec.rb`; `yarn test` text_clips + tray; `yarn check:ts` | **67 RSpec**, **57 Jest**, 0 failures | Merge: https://github.com/THAT-ON3-GUY/canvas-lms/commit/668650a4277e7d06987c8c7877bcf31aab68d6e4 |
 | **Slice 11** — Rich-content clipping | https://github.com/THAT-ON3-GUY/canvas-lms/pull/28 | `content_html` migration, sanitize_field, capture + tray/shared render | `bin/rspec` + `yarn test` text_clips + tray; `yarn check:ts` | **70 RSpec**, **61 Jest**, 0 failures | Merge: https://github.com/THAT-ON3-GUY/canvas-lms/commit/98894f4787cad5fda07f0ff11eff8bac4c3ef3b8 |
+| **Slice 12** — Quick copy & cite | https://github.com/THAT-ON3-GUY/canvas-lms/pull/29 | `clipCopy.ts`, tray copy buttons | `yarn test` text_clips + tray; `yarn check:ts` | **72 Jest**, 0 failures | PR #29 |
 
 ## Board / issue timeline (#2)
 
@@ -154,3 +155,14 @@ Manual checklist: [`manual-verification-checklist.md`](manual-verification-check
 | When (UTC) | Status | Method |
 |------------|--------|--------|
 | 2026-06-04 | Done | PR #28 squash-merged to `master` |
+
+## Slice 12 QA (quick copy & cite)
+
+| Command | Outcome |
+|---------|---------|
+| `docker compose run --rm web yarn test ui/features/text_clips ui/features/navigation_header/react/trays/__tests__/TextClipsTray.test.tsx` | **72 tests, 0 failures** |
+| `docker compose run --rm web yarn check:ts` | pass |
+
+| When (UTC) | Status | Method |
+|------------|--------|--------|
+| 2026-06-04 | Done | PR #29 squash-merged to `master` |

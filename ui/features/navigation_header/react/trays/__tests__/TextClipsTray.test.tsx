@@ -597,6 +597,87 @@ describe('TextClipsTray', () => {
     expect(screen.queryByTestId('text-clip-course-1')).not.toBeInTheDocument()
   })
 
+  it('copies clip content to the clipboard', async () => {
+    window.ENV.COURSE_ID = '16'
+    const user = userEvent.setup()
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    const clipboardStub = vi.spyOn(navigator.clipboard, 'writeText').mockImplementation(writeText)
+    server.use(http.get('*/api/v1/courses/16/text_clips', () => HttpResponse.json([baseClip])))
+    render(
+      <MockedQueryProvider>
+        <TextClipsTray />
+      </MockedQueryProvider>,
+    )
+    await waitFor(() => expect(screen.getByText(/alpha/)).toBeInTheDocument())
+    await user.click(screen.getByTestId('text-clip-copy-1'))
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith('alpha'))
+    clipboardStub.mockRestore()
+  })
+
+  it('copies rich clip content via clipboard.write when content_html is set', async () => {
+    window.ENV.COURSE_ID = '17'
+    const user = userEvent.setup()
+    const write = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal(
+      'ClipboardItem',
+      class MockClipboardItem {
+        constructor(public items: Record<string, Blob>) {}
+      },
+    )
+    const writeStub = vi.spyOn(navigator.clipboard, 'write').mockImplementation(write)
+    server.use(
+      http.get('*/api/v1/courses/17/text_clips', () =>
+        HttpResponse.json([
+          {
+            ...baseClip,
+            content: 'Bold text',
+            content_html: '<p><strong>Bold</strong> text</p>',
+          },
+        ]),
+      ),
+    )
+    render(
+      <MockedQueryProvider>
+        <TextClipsTray />
+      </MockedQueryProvider>,
+    )
+    await waitFor(() => expect(screen.getByTestId('text-clip-rich-1')).toBeInTheDocument())
+    await user.click(screen.getByTestId('text-clip-copy-1'))
+    await waitFor(() => expect(write).toHaveBeenCalled())
+    writeStub.mockRestore()
+  })
+
+  it('copies clip with citation including source', async () => {
+    window.ENV.COURSE_ID = '18'
+    const user = userEvent.setup()
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    const clipboardStub = vi.spyOn(navigator.clipboard, 'writeText').mockImplementation(writeText)
+    server.use(
+      http.get('*/api/v1/courses/18/text_clips', () =>
+        HttpResponse.json([
+          {
+            ...baseClip,
+            source_url: 'https://example.com/courses/18/pages/week-1',
+            source_title: 'Week 1 Page',
+          },
+        ]),
+      ),
+    )
+    render(
+      <MockedQueryProvider>
+        <TextClipsTray />
+      </MockedQueryProvider>,
+    )
+    await waitFor(() => expect(screen.getByText(/alpha/)).toBeInTheDocument())
+    await user.click(screen.getByTestId('text-clip-copy-citation-1'))
+    await waitFor(() =>
+      expect(writeText).toHaveBeenCalledWith(
+        'alpha\n\nSource: Week 1 Page (https://example.com/courses/18/pages/week-1)',
+      ),
+    )
+    clipboardStub.mockRestore()
+  })
+
   it('creates a share link and shows copy controls', async () => {
     window.ENV.COURSE_ID = '30'
     const user = userEvent.setup()

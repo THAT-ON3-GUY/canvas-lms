@@ -295,7 +295,7 @@ docker compose run --rm web bin/rubocop app/models/text_clip*.rb app/controllers
 
 | Item | Detail |
 |------|--------|
-| PR | [#29](https://github.com/THAT-ON3-GUY/canvas-lms/pull/29) |
+| PR | [#29](https://github.com/THAT-ON3-GUY/canvas-lms/pull/29) — merge `956e1d0167d` |
 | UX | **Copy** clip (plain or rich HTML); **Copy with citation** (text + source) |
 
 **Manual check:** Copy → paste content; Copy with citation → paste includes source line.

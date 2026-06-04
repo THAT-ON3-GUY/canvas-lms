@@ -25,6 +25,7 @@ import TextClipsTray, {sourceLinkLabel} from '../TextClipsTray'
 import {MockedQueryProvider} from '@canvas/test-utils/query'
 import type {GlobalEnv} from '@canvas/global/env/GlobalEnv.d'
 import type {TextClipRecord} from '../../../../text_clips/types'
+import * as exportClips from '../../../../text_clips/exportClips'
 
 vi.mock('@instructure/platform-alerts', () => ({
   showFlashAlert: vi.fn(),
@@ -719,6 +720,44 @@ describe('TextClipsTray', () => {
       expect(writeText).toHaveBeenCalledWith('https://example.com/text_clips/shared/secret-token'),
     )
     clipboardStub.mockRestore()
+  })
+
+  it('exports all loaded clips', async () => {
+    window.ENV.COURSE_ID = '40'
+    const user = userEvent.setup()
+    const downloadSpy = vi.spyOn(exportClips, 'downloadClipsExport').mockImplementation(() => {})
+    server.use(http.get('*/api/v1/courses/40/text_clips', () => HttpResponse.json([baseClip])))
+    render(
+      <MockedQueryProvider>
+        <TextClipsTray />
+      </MockedQueryProvider>,
+    )
+    await waitFor(() => expect(screen.getByText(/alpha/)).toBeInTheDocument())
+    await user.click(screen.getByTestId('text-clips-export'))
+    expect(downloadSpy).toHaveBeenCalledWith([baseClip], 'markdown')
+    downloadSpy.mockRestore()
+  })
+
+  it('bulk-deletes selected clips', async () => {
+    window.ENV.COURSE_ID = '41'
+    const user = userEvent.setup()
+    let deleted = false
+    server.use(
+      http.get('*/api/v1/courses/41/text_clips', () => HttpResponse.json([baseClip])),
+      http.delete('*/api/v1/courses/41/text_clips/1', () => {
+        deleted = true
+        return new HttpResponse(null, {status: 200})
+      }),
+    )
+    render(
+      <MockedQueryProvider>
+        <TextClipsTray />
+      </MockedQueryProvider>,
+    )
+    await waitFor(() => expect(screen.getByText(/alpha/)).toBeInTheDocument())
+    await user.click(screen.getByTestId('text-clip-select-1'))
+    await user.click(screen.getByTestId('text-clips-bulk-delete'))
+    await waitFor(() => expect(deleted).toBe(true))
   })
 
   it('stops sharing and hides the shared badge', async () => {

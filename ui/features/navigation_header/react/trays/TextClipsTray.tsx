@@ -246,7 +246,17 @@ function TextClipListItem({
                   data-testid={`text-clip-pinned-${clip.id}`}
                 />
               )}
-              <Text>{clipPreview(clip.content)}</Text>
+              {clip.content_html ? (
+                <View
+                  as="div"
+                  maxHeight="12rem"
+                  overflowY="auto"
+                  data-testid={`text-clip-rich-${clip.id}`}
+                  dangerouslySetInnerHTML={{__html: clip.content_html}}
+                />
+              ) : (
+                <Text>{clipPreview(clip.content)}</Text>
+              )}
             </Flex>
             {clip.tags && clip.tags.length > 0 && (
               <Flex wrap="wrap" margin="xx-small 0 0 0" data-testid={`text-clip-tags-${clip.id}`}>

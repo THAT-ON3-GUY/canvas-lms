@@ -21,11 +21,16 @@ import React, {useCallback, useEffect, useState} from 'react'
 import {showFlashAlert} from '@instructure/platform-alerts'
 import SelectionClipButton from './SelectionClipButton'
 import {createGlobalTextClip, createTextClip} from '../api'
-import {getSelectedText, selectionInsideEditor} from '../selectionUtils'
+import {
+  getSelectedHtml,
+  getSelectedText,
+  hasFormattedHtml,
+  selectionInsideEditor,
+} from '../selectionUtils'
 
 const I18n = createI18nScope('text_clips')
 
-type ClipUiState = {top: number; left: number; text: string} | null
+type ClipUiState = {top: number; left: number; text: string; html: string} | null
 
 export default function TextClipsSelectionRoot() {
   const courseId = window.ENV.COURSE_ID
@@ -48,10 +53,12 @@ export default function TextClipsSelectionRoot() {
       setClipUi(null)
       return
     }
+    const html = getSelectedHtml(sel)
     setClipUi({
       top: rect.bottom + window.scrollY + 4,
       left: rect.left + window.scrollX,
       text,
+      html,
     })
   }, [])
 
@@ -76,6 +83,7 @@ export default function TextClipsSelectionRoot() {
         try {
           const body = {
             content: clipUi.text,
+            ...(hasFormattedHtml(clipUi.html) ? {content_html: clipUi.html} : {}),
             source_url: window.location.href,
             source_title: document.title.slice(0, 512),
           }

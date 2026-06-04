@@ -77,6 +77,7 @@ class TextClipsController < ApplicationController
       built = @current_user.text_clips.build(
         course: course_scoped? ? @context : nil,
         content: attrs[:content],
+        content_html: attrs[:content_html].presence,
         source_url: attrs[:source_url].presence,
         source_title: attrs[:source_title].presence
       )
@@ -105,6 +106,9 @@ class TextClipsController < ApplicationController
                 Array(permitted["tag_ids"]).map(&:to_i).reject(&:zero?)
               end
     attrs = normalized_update_params(permitted.except("tag_ids", "pinned"))
+    if permitted.key?("content") && !permitted.key?("content_html")
+      attrs[:content_html] = nil
+    end
     if permitted.key?("pinned")
       attrs[:pinned_at] = ActiveModel::Type::Boolean.new.cast(permitted["pinned"]) ? Time.now.utc : nil
     end
@@ -221,11 +225,11 @@ class TextClipsController < ApplicationController
   end
 
   def create_params
-    params.permit(:content, :source_url, :source_title)
+    params.permit(:content, :content_html, :source_url, :source_title)
   end
 
   def update_params
-    params.permit(:content, :note, :pinned, tag_ids: [])
+    params.permit(:content, :content_html, :note, :pinned, tag_ids: [])
   end
 
   def index_sort_param
@@ -236,6 +240,7 @@ class TextClipsController < ApplicationController
   def normalized_update_params(permitted = nil)
     attrs = (permitted || update_params.to_h).symbolize_keys
     attrs[:note] = attrs[:note].presence if attrs.key?(:note)
+    attrs[:content_html] = attrs[:content_html].presence if attrs.key?(:content_html)
     attrs
   end
 

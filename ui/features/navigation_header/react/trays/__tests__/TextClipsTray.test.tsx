@@ -86,6 +86,28 @@ describe('TextClipsTray', () => {
     })
   })
 
+  it('renders rich HTML when content_html is present', async () => {
+    window.ENV.COURSE_ID = '15'
+    server.use(
+      http.get('*/api/v1/courses/15/text_clips', () =>
+        HttpResponse.json([
+          {
+            ...baseClip,
+            content: 'Bold text',
+            content_html: '<p><strong>Bold</strong> text</p>',
+          },
+        ]),
+      ),
+    )
+    render(
+      <MockedQueryProvider>
+        <TextClipsTray />
+      </MockedQueryProvider>,
+    )
+    await waitFor(() => expect(screen.getByTestId('text-clip-rich-1')).toBeInTheDocument())
+    expect(screen.getByTestId('text-clip-rich-1').innerHTML).toContain('<strong>Bold</strong>')
+  })
+
   it('pins a clip via PUT when the pin button is clicked', async () => {
     window.ENV.COURSE_ID = '7'
     const user = userEvent.setup()

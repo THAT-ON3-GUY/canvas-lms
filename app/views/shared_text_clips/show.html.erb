@@ -14,7 +14,13 @@
 </head>
 <body>
   <h1><%= t("Shared text clip", :scope => :text_clips) %></h1>
-  <div class="content"><%= h(@clip.content) %></div>
+  <div class="content">
+    <% if @clip.content_html.present? %>
+      <%= raw @clip.content_html %>
+    <% else %>
+      <%= h(@clip.content) %>
+    <% end %>
+  </div>
   <% if @clip.source_url.present? %>
     <p class="meta">
       <%= t("Source", :scope => :text_clips) %>:

@@ -236,6 +236,24 @@ describe TextClipsController do
         expect(body["source_title"]).to eql "Assignments Index"
       end
 
+      it "stores and serializes sanitized content_html" do
+        post :create, format: :json, params: {
+          course_id: @course.id,
+          content: "Rich clip",
+          content_html: "<p><strong>Rich</strong> clip</p><script>x</script>"
+        }
+        expect(response).to have_http_status(:created)
+        body = json_parse(response.body)
+        expect(body["content_html"]).to include("<strong>")
+        expect(body["content_html"]).not_to include("<script")
+        clip = @course.shard.activate { TextClip.find(body["id"]) }
+        expect(clip.content_html).not_to include("<script")
+
+        get :index, format: :json, params: { course_id: @course.id }
+        indexed = json_parse(response.body).find { |c| c["id"] == clip.id }
+        expect(indexed["content_html"]).to include("<strong>")
+      end
+
       it "returns forbidden when the user cannot read the course" do
         user_session(@student)
         post :create, format: :json, params: { course_id: @other_course.id, content: "blocked clip" }
@@ -270,6 +288,25 @@ describe TextClipsController do
         expect(clip.content).to eql "Revised clip"
         expect(clip.note).to eql "Study this for the exam"
         expect(body["note"]).to eql "Study this for the exam"
+      end
+
+      it "clears content_html when content is edited without content_html" do
+        @course.shard.activate do
+          @teacher_clip.update!(
+            content_html: "<p><em>Formatted</em></p>"
+          )
+        end
+        put :update, format: :json, params: {
+          course_id: @course.id,
+          id: @teacher_clip.id,
+          content: "Plain only now"
+        }
+        expect(response).to be_successful
+        body = json_parse(response.body)
+        clip = @course.shard.activate { @teacher_clip.reload }
+        expect(clip.content).to eql "Plain only now"
+        expect(clip.content_html).to be_nil
+        expect(body["content_html"]).to be_nil
       end
 
       it "pins and unpins a clip via pinned param" do

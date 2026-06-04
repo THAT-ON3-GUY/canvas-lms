@@ -51,6 +51,7 @@ export type ClipSort = 'recent' | 'oldest' | 'source'
 export type TextClipRecord = {
   id: number | string
   content: string
+  content_html?: string | null
   source_url?: string | null
   source_title?: string | null
   note?: string | null
@@ -68,12 +69,14 @@ export type TextClipRecord = {
 
 export type TextClipCreate = {
   content: string
+  content_html?: string
   source_url?: string
   source_title?: string
 }
 
 export type TextClipUpdate = {
   content?: string
+  content_html?: string
   note?: string
   pinned?: boolean
   tag_ids?: Array<number | string>

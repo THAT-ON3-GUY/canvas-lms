@@ -13,7 +13,7 @@
 | https://github.com/THAT-ON3-GUY/canvas-lms/pull/23 | **Nav + progress doc:** classic nav Text clips entry, OldSideNav tray, InstUI header mount, `progress-slice-5-onward.md`. Merge `4b1ada9aebb`. |
 | https://github.com/THAT-ON3-GUY/canvas-lms/pull/24 | **Slice 7 — Core close-out:** `TextClipsSelectionRoot` Jest (FR-01/FR-07), index newest-first RSpec, Story 12 manual checklist, closed issues #5–#16. Closes #10, #11, #12. Merge: `28654a2ce0f`. |
 | https://github.com/THAT-ON3-GUY/canvas-lms/pull/25 | **Slice 8 — Full-page /text_clips:** `TextClipsPagesController`, `text_clips_page` bundle, reuses `TextClipsTray` in global mode, “View all clips” tray link. Merge: `cf75128c12e`. |
-| https://github.com/THAT-ON3-GUY/canvas-lms/pull/26 | **Slice 9 — Highlight restore:** `highlightRestore.ts`, source links carry `#text_clip_highlight=`, bundle retries on page load. Frontend-only. |
+| https://github.com/THAT-ON3-GUY/canvas-lms/pull/26 | **Slice 9 — Highlight restore:** `highlightRestore.ts`, source links carry `#text_clip_highlight=`, bundle retries on page load. Frontend-only. Merge: `751a8a30c8c`. |
 
 ## Board: item titles and status timeline
 

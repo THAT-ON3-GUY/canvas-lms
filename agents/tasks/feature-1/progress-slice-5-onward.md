@@ -265,7 +265,7 @@ docker compose run --rm web bin/rubocop app/models/text_clip*.rb app/controllers
 
 | Item | Detail |
 |------|--------|
-| PR | [#26](https://github.com/THAT-ON3-GUY/canvas-lms/pull/26) |
+| PR | [#26](https://github.com/THAT-ON3-GUY/canvas-lms/pull/26) — merge `751a8a30c8c` |
 | UX | Tray/full-page **source** link appends `#text_clip_highlight=<snippet>`; destination page scrolls + ~4s yellow highlight |
 | Miss | Info flash: “Couldn't find the clipped text on this page” |
 

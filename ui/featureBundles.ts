@@ -221,6 +221,8 @@ const featureBundles: {
   terms_index: () => import('./features/terms_index/index'),
   terms_of_service_modal: () => import('./features/terms_of_service_modal/index'),
   copy_warnings_modal: () => import('./features/copy_warnings_modal/index'),
+  text_clips: () => import('./features/text_clips/index'),
+  text_clips_page: () => import('./features/text_clips_page/index'),
   terms_of_use: () => import('./features/terms_of_use/index'),
   theme_editor: () => import('./features/theme_editor/index'),
   theme_preview: () => import('./features/theme_preview/index'),

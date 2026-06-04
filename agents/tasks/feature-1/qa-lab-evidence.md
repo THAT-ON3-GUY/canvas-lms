@@ -12,6 +12,7 @@
 | **Slice 5** — Global clips view | https://github.com/THAT-ON3-GUY/canvas-lms/pull/21 | Global routes + controller refactor; `TextClipsTray` global mode; `api.ts` global helpers; `SideNav` always-on bookmark; `TextClipsSelectionRoot` | `docker compose run --rm web bin/rspec spec/models/text_clip_spec.rb spec/controllers/text_clips_controller_spec.rb`; `yarn test ui/features/text_clips ui/features/navigation_header/react/trays/__tests__/TextClipsTray.test.tsx`; `yarn check:ts` | **55 RSpec examples, 0 failures**; **33 Jest tests, 0 failures**; rubocop clean on touched Ruby | Merge: https://github.com/THAT-ON3-GUY/canvas-lms/commit/97c58ae454466df8fc5fda4943e9f7a9df73a563 |
 | **Slice 6** — Read-only share links | https://github.com/THAT-ON3-GUY/canvas-lms/pull/22 | `text_clip_shares` migration/model; `share`/`unshare` + `SharedTextClipsController`; tray share UI; API helpers | `docker compose run --rm web bin/rspec spec/models/text_clip_share_spec.rb spec/controllers/text_clips_controller_spec.rb spec/controllers/shared_text_clips_controller_spec.rb`; `yarn test ui/features/text_clips ui/features/navigation_header/react/trays/__tests__/TextClipsTray.test.tsx`; `yarn check:ts` | **44 RSpec examples, 0 failures**; **39 Jest tests, 0 failures**; rubocop clean on touched Ruby | Merge: https://github.com/THAT-ON3-GUY/canvas-lms/commit/b9dfadfcbad4521e902ffb387825ab205d9aeeec |
 | **Slice 7** — Core close-out | https://github.com/THAT-ON3-GUY/canvas-lms/pull/24 | `TextClipsSelectionRoot.test.tsx`; `manual-verification-checklist.md`; index newest-first RSpec; closed issues #5–#16 | `yarn test ui/features/text_clips`; `bin/rspec spec/controllers/text_clips_controller_spec.rb` | **44 Jest**, **38 RSpec**, 0 failures; `yarn check:ts` pass | Merge: https://github.com/THAT-ON3-GUY/canvas-lms/commit/28654a2ce0f |
+| **Slice 8** — Full-page /text_clips | https://github.com/THAT-ON3-GUY/canvas-lms/pull/25 | `TextClipsPagesController`, `text_clips_page` bundle, tray reuse, View all clips link | `yarn test ui/features/text_clips_page`; `bin/rspec spec/controllers/text_clips_pages_controller_spec.rb` | **25 Jest**, **2 RSpec**, 0 failures | Merge: TBD |
 
 ## Board / issue timeline (#2)
 
@@ -100,3 +101,17 @@ Manual checklist: [`manual-verification-checklist.md`](manual-verification-check
 | When (UTC) | Status | Method |
 |------------|--------|--------|
 | 2026-06-04 | Done | PR #24 squash-merged; issues **#5–#16** closed |
+
+## Slice 8 QA (full-page /text_clips)
+
+| Command | Outcome |
+|---------|---------|
+| `docker compose run --rm web yarn test ui/features/text_clips_page ui/features/text_clips` | **25 tests, 0 failures** |
+| `docker compose run --rm web yarn test ui/features/navigation_header/react/trays/__tests__/TextClipsTray.test.tsx` | **20 tests, 0 failures** |
+| `docker compose run --rm web yarn check:ts` | pass |
+| `docker compose run --rm web bin/rspec spec/controllers/text_clips_pages_controller_spec.rb` | **2 examples, 0 failures** |
+| `bin/rubocop` on new Ruby | no offenses |
+
+| When (UTC) | Status | Method |
+|------------|--------|--------|
+| 2026-06-04 | Done | PR #25 squash-merged to `master` |

@@ -675,6 +675,7 @@ CanvasRails::Application.routes.draw do
     concerns :files
   end
 
+  get "text_clips" => "text_clips_pages#show", :as => :text_clips_page
   get "text_clips/shared/:token" => "shared_text_clips#show", :as => :shared_text_clip
 
   resources :eportfolios, except: :index do

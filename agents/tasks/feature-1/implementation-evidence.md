@@ -12,6 +12,7 @@
 | https://github.com/THAT-ON3-GUY/canvas-lms/pull/22 | **Slice 6 — Read-only share links:** `text_clip_shares`, owner `POST/DELETE .../share`, anonymous `GET /text_clips/shared/:token`, tray share UI (create/copy/revoke). Refs #5, #7, #10, #11. |
 | https://github.com/THAT-ON3-GUY/canvas-lms/pull/23 | **Nav + progress doc:** classic nav Text clips entry, OldSideNav tray, InstUI header mount, `progress-slice-5-onward.md`. Merge `4b1ada9aebb`. |
 | https://github.com/THAT-ON3-GUY/canvas-lms/pull/24 | **Slice 7 — Core close-out:** `TextClipsSelectionRoot` Jest (FR-01/FR-07), index newest-first RSpec, Story 12 manual checklist, closed issues #5–#16. Closes #10, #11, #12. Merge: `28654a2ce0f`. |
+| https://github.com/THAT-ON3-GUY/canvas-lms/pull/25 | **Slice 8 — Full-page /text_clips:** `TextClipsPagesController`, `text_clips_page` bundle, reuses `TextClipsTray` in global mode, “View all clips” tray link. |
 
 ## Board: item titles and status timeline
 
@@ -177,4 +178,18 @@ docker compose restart web
 
 ### Trace
 
-Closes the original **Testing & Verification** milestone and FR-01–FR-07 acceptance without new product scope. Deferred: feature-flag rollout, `/text_clips` page, polish slice.
+Closes the original **Testing & Verification** milestone and FR-01–FR-07 acceptance without new product scope. Deferred: feature-flag rollout, polish slice.
+
+## Slice 8 — Dedicated full-page /text_clips view
+
+### Scope delivered
+
+- **Route:** `GET /text_clips` → [`TextClipsPagesController#show`](../../../app/controllers/text_clips_pages_controller.rb)
+- **View:** [`app/views/text_clips_pages/show.html.erb`](../../../app/views/text_clips_pages/show.html.erb) with `#text_clips_page_mount`
+- **Frontend:** [`ui/features/text_clips_page/`](../../../ui/features/text_clips_page/) mounts [`TextClipsPage.tsx`](../../../ui/features/text_clips_page/TextClipsPage.tsx) reusing [`TextClipsTray`](../../../ui/features/navigation_header/react/trays/TextClipsTray.tsx) (global mode when no `ENV.COURSE_ID`)
+- **Nav:** “View all clips” link in tray header (`data-testid="text-clips-view-all-link"`)
+- **Bundles:** `text_clips_page` and `text_clips` registered in [`ui/featureBundles.ts`](../../../ui/featureBundles.ts)
+
+### Trace
+
+Deferred full-page manager from Slice 5 plan; no new API or migrations.

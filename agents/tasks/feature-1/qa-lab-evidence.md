@@ -14,6 +14,7 @@
 | **Slice 7** — Core close-out | https://github.com/THAT-ON3-GUY/canvas-lms/pull/24 | `TextClipsSelectionRoot.test.tsx`; `manual-verification-checklist.md`; index newest-first RSpec; closed issues #5–#16 | `yarn test ui/features/text_clips`; `bin/rspec spec/controllers/text_clips_controller_spec.rb` | **44 Jest**, **38 RSpec**, 0 failures; `yarn check:ts` pass | Merge: https://github.com/THAT-ON3-GUY/canvas-lms/commit/28654a2ce0f |
 | **Slice 8** — Full-page /text_clips | https://github.com/THAT-ON3-GUY/canvas-lms/pull/25 | `TextClipsPagesController`, `text_clips_page` bundle, tray reuse, View all clips link | `yarn test ui/features/text_clips_page`; `bin/rspec spec/controllers/text_clips_pages_controller_spec.rb` | **25 Jest**, **2 RSpec**, 0 failures | Merge: https://github.com/THAT-ON3-GUY/canvas-lms/commit/cf75128c12e |
 | **Slice 9** — Highlight restore | https://github.com/THAT-ON3-GUY/canvas-lms/pull/26 | `highlightRestore.ts`, bundle hook, tray source href fragment | `yarn test ui/features/text_clips ui/features/navigation_header/react/trays/__tests__/TextClipsTray.test.tsx`; `yarn check:ts` | **54 Jest**, 0 failures | Merge: https://github.com/THAT-ON3-GUY/canvas-lms/commit/751a8a30c8cd83141c5463880589d4fbbd74df74 |
+| **Slice 10** — Pin & sort | https://github.com/THAT-ON3-GUY/canvas-lms/pull/27 | `pinned_at` migration, `ordered` scope, tray sort + pin UI | `bin/rspec spec/controllers/text_clips_controller_spec.rb spec/models/text_clip_spec.rb`; `yarn test` text_clips + tray; `yarn check:ts` | **67 RSpec**, **57 Jest**, 0 failures | PR #27 |
 
 ## Board / issue timeline (#2)
 
@@ -127,3 +128,16 @@ Manual checklist: [`manual-verification-checklist.md`](manual-verification-check
 | When (UTC) | Status | Method |
 |------------|--------|--------|
 | 2026-06-04 | Done | PR #26 squash-merged to `master` |
+
+## Slice 10 QA (pin & sort)
+
+| Command | Outcome |
+|---------|---------|
+| `docker compose run --rm web bin/rspec spec/controllers/text_clips_controller_spec.rb spec/models/text_clip_spec.rb` | **67 examples, 0 failures** |
+| `docker compose run --rm web yarn test ui/features/text_clips ui/features/navigation_header/react/trays/__tests__/TextClipsTray.test.tsx` | **57 tests, 0 failures** |
+| `docker compose run --rm web yarn check:ts` | pass |
+| `bin/rubocop` on touched Ruby | no offenses |
+
+| When (UTC) | Status | Method |
+|------------|--------|--------|
+| 2026-06-04 | Done | PR #27 squash-merged to `master` |

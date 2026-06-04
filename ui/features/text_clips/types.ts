@@ -46,12 +46,16 @@ export type TextClipShareRecord = {
   url: string
 }
 
+export type ClipSort = 'recent' | 'oldest' | 'source'
+
 export type TextClipRecord = {
   id: number | string
   content: string
   source_url?: string | null
   source_title?: string | null
   note?: string | null
+  pinned?: boolean
+  pinned_at?: string | null
   tags?: TextClipTagStub[]
   share?: TextClipShareRecord | null
   course?: {id: number | string; name: string} | null
@@ -71,6 +75,7 @@ export type TextClipCreate = {
 export type TextClipUpdate = {
   content?: string
   note?: string
+  pinned?: boolean
   tag_ids?: Array<number | string>
 }
 

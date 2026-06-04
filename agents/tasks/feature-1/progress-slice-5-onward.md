@@ -271,6 +271,16 @@ docker compose run --rm web bin/rubocop app/models/text_clip*.rb app/controllers
 
 **Manual check:** Clip text on a course page → tray → open source link → page scrolls/highlights; edit page to remove text → open source → info flash (no error).
 
+## Slice 10 — Pin & sort clips (2026-06-04)
+
+| Item | Detail |
+|------|--------|
+| PR | [#27](https://github.com/THAT-ON3-GUY/canvas-lms/pull/27) |
+| UX | **Pin** clip to top (tray + `/text_clips`); **Sort** Recent / Oldest / Source |
+| API | `GET .../text_clips?sort=oldest|source`; `PUT` with `pinned: true/false` |
+
+**Manual check:** Pin a clip → it stays at top when sorting; unpin → normal order; sort Oldest/Source updates list (pinned still first).
+
 ## What is not done yet (project backlog)
 
 Per [`agents/project-creation.md`](../../project-creation.md):
@@ -288,4 +298,4 @@ Per [`agents/project-creation.md`](../../project-creation.md):
 
 ---
 
-*Last updated: 2026-06-04 — Slice 9 highlight restore on source pages.*
+*Last updated: 2026-06-04 — Slice 10 pin & sort clips.*

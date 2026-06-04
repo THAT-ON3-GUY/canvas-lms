@@ -59,7 +59,7 @@ class TextClipsController < ApplicationController
         base.for_course(@context)
       else
         base.for_courses(course_ids)
-      end.order(created_at: :desc)
+      end.ordered(index_sort_param)
     end
     paginated = Api.paginate(clips, self, index_url)
     render json: text_clips_json(paginated, @current_user, session, { host: request.host_with_port })
@@ -104,7 +104,10 @@ class TextClipsController < ApplicationController
     tag_ids = if permitted.key?("tag_ids")
                 Array(permitted["tag_ids"]).map(&:to_i).reject(&:zero?)
               end
-    attrs = normalized_update_params(permitted.except("tag_ids"))
+    attrs = normalized_update_params(permitted.except("tag_ids", "pinned"))
+    if permitted.key?("pinned")
+      attrs[:pinned_at] = ActiveModel::Type::Boolean.new.cast(permitted["pinned"]) ? Time.now.utc : nil
+    end
 
     ok = on_clip_shard(clip) do
       ActiveRecord::Base.transaction do
@@ -222,7 +225,12 @@ class TextClipsController < ApplicationController
   end
 
   def update_params
-    params.permit(:content, :note, tag_ids: [])
+    params.permit(:content, :note, :pinned, tag_ids: [])
+  end
+
+  def index_sort_param
+    sort = params[:sort].to_s
+    %w[recent oldest source].include?(sort) ? sort : "recent"
   end
 
   def normalized_update_params(permitted = nil)

@@ -14,6 +14,7 @@
 | https://github.com/THAT-ON3-GUY/canvas-lms/pull/24 | **Slice 7 — Core close-out:** `TextClipsSelectionRoot` Jest (FR-01/FR-07), index newest-first RSpec, Story 12 manual checklist, closed issues #5–#16. Closes #10, #11, #12. Merge: `28654a2ce0f`. |
 | https://github.com/THAT-ON3-GUY/canvas-lms/pull/25 | **Slice 8 — Full-page /text_clips:** `TextClipsPagesController`, `text_clips_page` bundle, reuses `TextClipsTray` in global mode, “View all clips” tray link. Merge: `cf75128c12e`. |
 | https://github.com/THAT-ON3-GUY/canvas-lms/pull/26 | **Slice 9 — Highlight restore:** `highlightRestore.ts`, source links carry `#text_clip_highlight=`, bundle retries on page load. Frontend-only. Merge: `751a8a30c8c`. |
+| https://github.com/THAT-ON3-GUY/canvas-lms/pull/27 | **Slice 10 — Pin & sort:** `pinned_at` column, `ordered` scope, tray sort select + pin button. |
 
 ## Board: item titles and status timeline
 
@@ -207,3 +208,16 @@ Deferred full-page manager from Slice 5 plan; no new API or migrations.
 ### Trace
 
 Frontend-only; no API, controller, or migration changes. First-match only; graceful info flash when text is missing on the page.
+
+## Slice 10 — Pin & sort clips
+
+### Scope delivered
+
+- **Migration:** `pinned_at` on `text_clips` ([`20260604080000_add_pinned_at_to_text_clips.rb`](../../../db/migrate/20260604080000_add_pinned_at_to_text_clips.rb))
+- **Model:** `TextClip.ordered(sort)` — pinned first (`pinned_at DESC NULLS LAST`), then recent / oldest / source
+- **API:** `sort` query param on index; `pinned` on update; JSON `pinned` + `pinned_at`
+- **Tray:** sort `SimpleSelect`, pin/unpin `IconButton`, pinned indicator; full page inherits via `TextClipsTray`
+
+### Trace
+
+Multi-tag filter unchanged (OR via `tag_ids[]`). Pin toggle uses existing PUT; no new routes.

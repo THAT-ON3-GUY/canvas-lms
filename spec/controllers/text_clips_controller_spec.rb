@@ -77,6 +77,55 @@ describe TextClipsController do
         expect(clip_ids).to include(older.id)
       end
 
+      it "returns pinned clips before unpinned clips" do
+        unpinned = create_clip_for(@teacher, @course, "Unpinned clip")
+        travel_to 1.hour.from_now do
+          pinned = create_clip_for(@teacher, @course, "Pinned clip")
+          @course.shard.activate { pinned.update!(pinned_at: Time.now.utc) }
+        end
+        pinned = @course.shard.activate { TextClip.where(content: "Pinned clip").first }
+        get :index, format: :json, params: { course_id: @course.id }
+        clip_ids = json_parse(response.body).pluck("id")
+        expect(clip_ids.first).to eq pinned.id
+        expect(clip_ids).to include(unpinned.id)
+      end
+
+      it "sorts oldest first when sort=oldest" do
+        older = @teacher_clip
+        newer = nil
+        travel_to 1.hour.from_now do
+          newer = create_clip_for(@teacher, @course, "Newer clip")
+        end
+        get :index, format: :json, params: { course_id: @course.id, sort: "oldest" }
+        clip_ids = json_parse(response.body).pluck("id")
+        expect(clip_ids.first).to eq older.id
+        expect(clip_ids.last).to eq newer.id
+      end
+
+      it "sorts by source title when sort=source" do
+        zebra = @course.shard.activate do
+          TextClip.create!(
+            user_id: @teacher.id,
+            course_id: @course.id,
+            content: "Zebra content",
+            source_title: "Zebra Page",
+            root_account_id: @course.root_account_id
+          )
+        end
+        alpha = @course.shard.activate do
+          TextClip.create!(
+            user_id: @teacher.id,
+            course_id: @course.id,
+            content: "Alpha content",
+            source_title: "Alpha Page",
+            root_account_id: @course.root_account_id
+          )
+        end
+        get :index, format: :json, params: { course_id: @course.id, sort: "source" }
+        titled_ids = json_parse(response.body).filter_map { |c| c["id"] if c["source_title"].present? }
+        expect(titled_ids.index(alpha.id)).to be < titled_ids.index(zebra.id)
+      end
+
       it "returns a Link header with rel=next when more clips exist than per_page" do
         3.times do |i|
           create_clip_for(@teacher, @course, "Paged clip #{i}")
@@ -221,6 +270,30 @@ describe TextClipsController do
         expect(clip.content).to eql "Revised clip"
         expect(clip.note).to eql "Study this for the exam"
         expect(body["note"]).to eql "Study this for the exam"
+      end
+
+      it "pins and unpins a clip via pinned param" do
+        put :update, format: :json, params: {
+          course_id: @course.id,
+          id: @teacher_clip.id,
+          pinned: true
+        }
+        expect(response).to be_successful
+        body = json_parse(response.body)
+        clip = @course.shard.activate { @teacher_clip.reload }
+        expect(clip.pinned_at).to be_present
+        expect(body["pinned"]).to be true
+
+        put :update, format: :json, params: {
+          course_id: @course.id,
+          id: @teacher_clip.id,
+          pinned: false
+        }
+        expect(response).to be_successful
+        body = json_parse(response.body)
+        clip = @course.shard.activate { @teacher_clip.reload }
+        expect(clip.pinned_at).to be_nil
+        expect(body["pinned"]).to be false
       end
 
       it "returns not found for another user's clip" do

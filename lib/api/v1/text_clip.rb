@@ -23,11 +23,12 @@ module Api::V1::TextClip
   include Api::V1::TextClipShare
 
   API_JSON_OPTS = {
-    only: %w[id content source_url source_title note user_id course_id workflow_state created_at updated_at]
+    only: %w[id content source_url source_title note pinned_at user_id course_id workflow_state created_at updated_at]
   }.freeze
 
   def text_clip_json(clip, user, session, opts = {})
     json = api_json(clip, user, session, opts.merge(API_JSON_OPTS))
+    json["pinned"] = clip.pinned_at.present?
     json["tags"] = clip.clip_tags.map { |t| { "id" => t.id, "name" => t.name, "color" => t.color } }
     json["course"] = clip.course && { "id" => clip.course.id, "name" => clip.course.name }
     share = clip.active_share
